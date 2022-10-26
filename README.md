@@ -2,4 +2,4 @@
 
 Xiaoyang Song and Jing Dong's final project repository for COMS E6998 Representation Learning.
 
-Keyword: machine learning, meta learning, adversarial learning, SimCLR, etc.
+Keyword: Robust Machine Learning, Meta Learning, Adversarial Learning, SimCLR, etc.
