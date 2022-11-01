@@ -8,6 +8,8 @@ from data.blur import GaussianBlur
 from torchvision import transforms, datasets
 from data.view_generator import ContrastiveLearningViewGenerator
 from exceptions.exception import InvalidDatasetSelection
+# Customization
+from utils import *
 
 
 class ContrastiveLearningDataset:
@@ -62,4 +64,4 @@ if __name__ == '__main__':
     # Visualize example images
     img_view = torch.stack(train_dataset[0][0])
     ic(img_view.shape)
-
+    show_images(img_view.data.cpu())
