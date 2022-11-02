@@ -88,4 +88,14 @@ if __name__ == '__main__':
     # View original images
     cifar_tri, _, _, _ = CIFAR10()
     plt.imshow(np.array(cifar_tri[0][0].permute(1, 2, 0)))
-    plt.show()
+    # plt.show()
+
+    # Check dataloader shape
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset, batch_size=32, shuffle=True,
+        num_workers=2, pin_memory=True, drop_last=True)
+    tri_batch = next(iter(train_loader))
+    ic(len(tri_batch))
+    ic(len(tri_batch[0]))
+    cat_img = torch.cat(tri_batch[0], dim=0)
+    ic(cat_img.shape)
