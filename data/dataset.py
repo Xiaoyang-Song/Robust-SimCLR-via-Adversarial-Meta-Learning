@@ -10,6 +10,7 @@ from data.view_generator import ContrastiveLearningViewGenerator
 from exceptions.exception import InvalidDatasetSelection
 # Customization
 from utils import *
+from PIL import Image
 
 
 class ContrastiveLearningDataset:
@@ -55,13 +56,36 @@ class ContrastiveLearningDataset:
             return dataset_fn()
 
 
+def CIFAR10(batch_size=128, test_batch_size=128):
+    transform = transforms.Compose(
+        [transforms.ToTensor()])
+    train_dataset = datasets.CIFAR10('./datasets/CIFAR-10', train=True,
+                                     download=True, transform=transform)
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset, batch_size=batch_size, shuffle=True)
+    val_dataset = datasets.CIFAR10('./datasets/CIFAR-10', train=False, download=True,
+                                   transform=transform)
+    val_loader = torch.utils.data.DataLoader(
+        val_dataset, batch_size=test_batch_size, shuffle=True)
+
+    return train_dataset, val_dataset, train_loader, val_loader
+
+
 if __name__ == '__main__':
     ic("Data Augmentation & Visualization")
     dataset = ContrastiveLearningDataset("./datasets")
-    train_dataset = dataset.get_dataset('cifar10', 2)
+    num_views = 2
+    train_dataset = dataset.get_dataset('cifar10', num_views)
     ic(len(train_dataset))
     ic(len(train_dataset[0][0]))
     # Visualize example images
     img_view = torch.stack(train_dataset[0][0])
     ic(img_view.shape)
-    show_images(img_view.data.cpu())
+    ic(img_view[0].shape)
+    for idx in range(num_views):
+        Image.fromarray(np.array(img_view[idx].reshape(32, 32, 3)), 'RGB').save(
+            f"data/example/view{idx}.png")
+    # View original images
+    cifar_tri, _, _, _ = CIFAR10()
+    plt.imshow(np.array(cifar_tri[0][0].permute(1, 2, 0)))
+    plt.show()
