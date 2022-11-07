@@ -22,157 +22,95 @@ criterion = RBSimCLRLoss(batch_size=128, temperature=0.5)
 
 
 def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, criterion,
-                     logger, checkpoint=None, max_epoch=100, device=DEVICE):
-    if checkpoint is None:
-        # Get SCHEDULER
-        warmupscheduler = scheduler['warmupscheduler']
-        mainscheduler = scheduler['mainscheduler']
-    else:
-        # TODO: (Xiaoyang) Load checkpoint
-        pass
+                     logger, max_epoch=100, n_steps_show=128, n_epoch_checkpoint=10,
+                     device=DEVICE):
+
+    print(f"Device: {device}")
+    # TODO: (Xiaoyang) Enable checkpoint loading if necessary
+    warmupscheduler = scheduler['warmupscheduler']
+    mainscheduler = scheduler['mainscheduler']
+
     # Basic stats
     current_epoch = 0
     for epoch in range(max_epoch):
-        print(f"Epoch [{epoch}/{epochs}]\t")
+        print(f"Epoch [{epoch}/{max_epoch}]\t")
         stime = time.time()
+
+        # TRAINING phase
         model.train()
-        tr_loss_epoch = 0
+        tr_loss_epoch = []
         # TODO: (Xiaoyang) Sample attacks here
-        # e.g. Attacker = Attack(type)
+        # e.g. Attacker = Attack(type, metadata)
         for step, (x_i, x_j, x) in enumerate(train_loader):
             optimizer.zero_grad()
             # Get augmented and attacked images
             x_i = x_i.squeeze().to(device).float()
             x_j = x_j.squeeze().to(device).float()
-            # x_adv = Attacker(model, x, target)
+            # x_adv = Attacker(model, x, target, device)
+            x_adv = None
             # Get latent representation
             z_i = model(x_i)
             z_j = model(x_j)
-            # z_adv = model(x_adv)
+            z_adv = model(x_adv)
 
-            # loss = criterion(z_i, z_j, z_adv)
+            loss = criterion(z_i, z_j, z_adv)
             loss.backward()
             optimizer.step()
+
+            # Logging & Append training loss
+            tr_loss_epoch.append(loss.item())
+            logger.log_train_step(loss.item())
+
+            # Show stats every n_steps_show updates
+            if (step+1) % n_steps_show == 0:
+                print(
+                    f"Step [{step+1}/{len(train_loader)}]\t Loss: {round(loss.item(), 5)}")
+
+        # Log learning rate
+        lr = optimizer.param_groups[0]["lr"]
+        logger.log_lr_epoch(lr)
+
+        # SCHEDULER Update
         if epoch < 10:
             warmupscheduler.step()
         if epoch >= 10:
             mainscheduler.step()
-        # EVALUATION
+
+        # EVALUATION Phase
         model.eval()
         with torch.no_grad():
-            val_loss_epoch = 0
+            val_loss_epoch = []
             for step, (x_i, x_j, x) in enumerate(val_loader):
 
                 x_i = x_i.squeeze().to(device).float()
                 x_j = x_j.squeeze().to(device).float()
                 # x_adv = Attacker(x)
+                x_adv = None
                 # Get latent representation
                 z_i = model(x_i)
                 z_j = model(x_j)
-                # z_adv = model(x_adv)
+                z_adv = model(x_adv)
 
-                # loss = criterion(z_i, z_j, z_adv)
-                val_loss_epoch += loss.item()
+                loss = criterion(z_i, z_j, z_adv)
 
-        if nr == 0:
-            # tr_loss.append(tr_loss_epoch / len(dl))
-            # val_loss.append(val_loss_epoch / len(vdl))
-            print(
-                f"Epoch [{epoch}/{epochs}]\t Training Loss: {tr_loss_epoch / len(dl)}\t lr: {round(lr, 5)}")
-            print(
-                f"Epoch [{epoch}/{epochs}]\t Validation Loss: {val_loss_epoch / len(vdl)}\t lr: {round(lr, 5)}")
-            current_epoch += 1
+                # Logging & show validation statistics
+                val_loss_epoch.append(loss.item())
 
-        # dg.on_epoch_end()
-
-    time_taken = (time.time()-stime)/60
-    print(f"Epoch [{epoch}/{epochs}]\t Time Taken: {time_taken} minutes")
-
-
-nr = 0
-current_epoch = 0
-epochs = 100
-tr_loss = []
-val_loss = []
-
-for epoch in range(100):
-
-    print(f"Epoch [{epoch}/{epochs}]\t")
-    stime = time.time()
-
-    model.train()
-    tr_loss_epoch = 0
-
-    for step, (x_i, x_j) in enumerate(train_loader):
-        optimizer.zero_grad()
-        x_i = x_i.squeeze().to('cuda:0').float()
-        x_j = x_j.squeeze().to('cuda:0').float()
-
-        # positive pair, with encoding
-        z_i = model(x_i)
-        z_j = model(x_j)
-
-        loss = criterion(z_i, z_j)
-        loss.backward()
-
-        optimizer.step()
-
-        if nr == 0 and step % 50 == 0:
-            print(
-                f"Step [{step}/{len(train_loader)}]\t Loss: {round(loss.item(), 5)}")
-
-        tr_loss_epoch += loss.item()
-
-    if nr == 0 and epoch < 10:
-        warmupscheduler.step()
-    if nr == 0 and epoch >= 10:
-        mainscheduler.step()
-
-    lr = optimizer.param_groups[0]["lr"]
-
-    # if nr == 0 and (epoch+1) % 50 == 0:
-    # save_model(model, optimizer, mainscheduler, current_epoch,
-    #            "SimCLR_CIFAR10_RN50_P128_LR0P2_LWup10_Cos500_T0p5_B128_checkpoint_{}_260621.pt")
-
-    model.eval()
-    with torch.no_grad():
-        val_loss_epoch = 0
-        for step, (x_i, x_j) in enumerate(valid_loader):
-
-            x_i = x_i.squeeze().to('cuda:0').float()
-            x_j = x_j.squeeze().to('cuda:0').float()
-
-            # positive pair, with encoding
-            z_i = model(x_i)
-            z_j = model(x_j)
-
-            loss = criterion(z_i, z_j)
-
-            if nr == 0 and step % 50 == 0:
-                print(
-                    f"Step [{step}/{len(valid_loader)}]\t Loss: {round(loss.item(),5)}")
-
-            val_loss_epoch += loss.item()
-
-    if nr == 0:
-        tr_loss.append(tr_loss_epoch / len(dl))
-        val_loss.append(val_loss_epoch / len(vdl))
+        # Checkpointing
+        if (epoch+1) % n_epoch_checkpoint == 0:
+            checkpoint(model, optimizer, mainscheduler, current_epoch,
+                       logger, "RBSimCLR_epoch_{}_checkpoint.pt")
+        # Logging & Show epoch-level statistics
         print(
-            f"Epoch [{epoch}/{epochs}]\t Training Loss: {tr_loss_epoch / len(dl)}\t lr: {round(lr, 5)}")
+            f"Epoch [{epoch+1}/{max_epoch}]\t Training Loss: {np.mean(tr_loss_epoch)}\t lr: {round(lr, 5)}")
         print(
-            f"Epoch [{epoch}/{epochs}]\t Validation Loss: {val_loss_epoch / len(vdl)}\t lr: {round(lr, 5)}")
+            f"Epoch [{epoch+1}/{max_epoch}]\t Validation Loss: {np.mean(val_loss_epoch)}\t lr: {round(lr, 5)}")
         current_epoch += 1
 
-    # dg.on_epoch_end()
-
+    # Running time statistics
     time_taken = (time.time()-stime)/60
-    print(f"Epoch [{epoch}/{epochs}]\t Time Taken: {time_taken} minutes")
+    print(f"Epoch [{epoch}/{max_epoch}]\t Time Taken: {time_taken} minutes")
 
-    # if (epoch+1) % 10 == 0:
-    #     plot_features(model.pretrained, 10, 2048, 128)
-
-# save_model(model, optimizer, mainscheduler, current_epoch,
-#            "SimCLR_CIFAR10_RN50_P128_LR0P2_LWup10_Cos500_T0p5_B128_checkpoint_{}_260621.pt")
 
 if __name__ == '__main__':
     ic("RBSimCLR trainer")
