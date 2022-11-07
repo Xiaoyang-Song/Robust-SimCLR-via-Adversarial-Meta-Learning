@@ -74,7 +74,7 @@ def CIFAR10(batch_size=128, test_batch_size=128):
 if __name__ == '__main__':
     ic("Data Augmentation & Visualization")
     dataset = ContrastiveLearningDataset("./datasets")
-    num_views = 3
+    num_views = 2
     train_dataset = dataset.get_dataset('cifar10', num_views)
     ic(len(train_dataset))
     ic(len(train_dataset[0][0]))
@@ -96,7 +96,7 @@ if __name__ == '__main__':
         num_workers=2, pin_memory=True, drop_last=True)
     tri_batch = next(iter(train_loader))
     ic(len(tri_batch))
-    ic(len(tri_batch[0]))
+    ic(tri_batch[0][0].shape)
     ic(len(tri_batch[1]))
-    cat_img = torch.cat(tri_batch[0], dim=0)
-    ic(cat_img.shape)
+    # cat_img = torch.cat(tri_batch[0], dim=0)
+    # ic(cat_img.shape)

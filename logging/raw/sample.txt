@@ -1,1 +1,25 @@
-raw sample file for testing
+
+for each epoch:
+    Sample a batch of attacks (e.g. 8): PGD x 2, FSGM x 4, SIM x 2
+    Initialize theta = []
+    for each attack:
+        Sample a batch of images (32) with 2 augmented views: 3 x (32 x 3 x 224 x 224)
+        1. Get x_i: 32 x 3 x 224 x 224
+        2. Get x_j: 32 x 3 x 224 x 224
+        3. Use selected attack & current model parameter to generated x_adv: 32 x 3 x 224 x 224
+        4. Feed into encoder & projector
+        5. Compute loss
+        6. Compute updated model parameter and append in theta
+    Initialize loss = []
+    for each theta0 in theta:
+        1. load theta0 in model
+        2. Sample another batch of images (32) with 2 augmented views: 3 x (32 x 3 x 224 x 224)
+        3. Get x_i: 32 x 3 x 224 x 224
+        4. Get x_j: 32 x 3 x 224 x 224
+        5. Use selected attack & current model parameter to generated x_adv: 32 x 3 x 224 x 224
+        6. Feed into encoder & projector
+        7. Compute local loss
+        8. Append local loss in loss
+    Compute mean/sum of loss
+    Meta-update global model parameters
+    
