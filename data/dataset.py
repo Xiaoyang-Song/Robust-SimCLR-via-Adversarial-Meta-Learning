@@ -37,7 +37,7 @@ class ContrastiveLearningDataset:
         valid_datasets = {'cifar10': lambda: datasets.CIFAR10(self.root_folder, train=True,
                                                               transform=ContrastiveLearningViewGenerator(
                                                                   self.get_simclr_pipeline_transform(
-                                                                      32),
+                                                                      224),
                                                                   n_views),
                                                               download=True),
 
@@ -74,7 +74,7 @@ def CIFAR10(batch_size=128, test_batch_size=128):
 if __name__ == '__main__':
     ic("Data Augmentation & Visualization")
     dataset = ContrastiveLearningDataset("./datasets")
-    num_views = 2
+    num_views = 3
     train_dataset = dataset.get_dataset('cifar10', num_views)
     ic(len(train_dataset))
     ic(len(train_dataset[0][0]))
@@ -83,7 +83,7 @@ if __name__ == '__main__':
     ic(img_view.shape)
     ic(img_view[0].shape)
     for idx in range(num_views):
-        Image.fromarray(np.array(img_view[idx].reshape(32, 32, 3)), 'RGB').save(
+        Image.fromarray(np.array(img_view[idx].reshape(224, 224, 3)), 'RGB').save(
             f"data/example/view{idx}.png")
     # View original images
     cifar_tri, _, _, _ = CIFAR10()
@@ -97,5 +97,6 @@ if __name__ == '__main__':
     tri_batch = next(iter(train_loader))
     ic(len(tri_batch))
     ic(len(tri_batch[0]))
+    ic(len(tri_batch[1]))
     cat_img = torch.cat(tri_batch[0], dim=0)
     ic(cat_img.shape)
