@@ -4,7 +4,7 @@ import torchvision
 from identity import Identity
 from resnet import *
 
-# Credit: the RBSimCLR class is modified based on this repo:
+# Credit: the RBSimCLR class (including resnet.py & identity.py) is MODIFIED based on this repo:
 # 1. https://github.com/Spijkervet/SimCLR/blob/master/simclr/modules
 
 
