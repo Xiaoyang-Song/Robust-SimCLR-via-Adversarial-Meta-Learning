@@ -44,7 +44,7 @@ class PairwiseSimilarity(nn.Module):
         # assertion check
         assert len(z_i.shape) == 2
         assert len(z_j.shape) == 2
-
+        # TODO: (Xiaoyang) code refactoring
         N = 2 * self.batch_size
 
         z = torch.cat((z_i, z_j), dim=0)
@@ -66,8 +66,8 @@ class PairwiseSimilarity(nn.Module):
             np.array([0]*N)).reshape(-1).to(positive_samples.device).long()  # .float()
 
         logits = torch.cat((positive_samples, negative_samples), dim=1)
-        ic(logits)
-        ic(labels)
+        # ic(logits)
+        # ic(labels)
         loss = self.criterion(logits, labels)
         loss /= N
 
