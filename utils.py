@@ -4,26 +4,30 @@ import matplotlib.gridspec as gridspec
 from matplotlib import markers
 import torch
 import numpy as np
+import os
 
-# Helper for visualizing images with augmentation
+# Device Auto-Configuration (Compatible with GPU training)
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+def checkpoint(model, optimizer, scheduler, current_epoch, logger, filename):
+    out = os.path.join('/checkpoint/', filename.format(current_epoch))
+
+    torch.save({'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'scheduler_state_dict': scheduler.state_dict(),
+                'logger': logger
+                }, out)
 
 
-# def show_images(images):
-#     images = torch.reshape(
-#         images, [images.shape[0], -1]
-#     )  # images reshape to (batch_size, D)
-#     sqrtn = int(math.ceil(math.sqrt(images.shape[0])))
-#     sqrtimg = int(math.ceil(math.sqrt(images.shape[1])))
+class Logger():
+    def __init__(self):
+        super().__init__()
 
-#     fig = plt.figure(figsize=(sqrtn, sqrtn))
-#     gs = gridspec.GridSpec(sqrtn, sqrtn)
-#     gs.update(wspace=0.05, hspace=0.05)
+    def log_train_step():
+        pass
 
-#     for i, img in enumerate(images):
-#         ax = plt.subplot(gs[i])
-#         plt.axis("off")
-#         ax.set_xticklabels([])
-#         ax.set_yticklabels([])
-#         ax.set_aspect("equal")
-#         plt.imshow(img.reshape([sqrtimg, sqrtimg]))
-#     return
+    def log_eval():
+        pass
+
+    def log_epoch():
+        pass
