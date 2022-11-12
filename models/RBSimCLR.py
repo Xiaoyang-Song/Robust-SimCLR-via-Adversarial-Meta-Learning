@@ -1,8 +1,8 @@
 import torch.nn as nn
 import torchvision
 # from simclr.modules.resnet_hacks import modify_resnet_model
-from identity import Identity
-from resnet import *
+from models.identity import Identity
+from models.resnet import *
 
 # Credit: the RBSimCLR class (including resnet.py & identity.py) is MODIFIED based on this repo:
 # 1. https://github.com/Spijkervet/SimCLR/blob/master/simclr/modules

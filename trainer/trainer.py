@@ -1,7 +1,8 @@
 import torch
 import torchvision
 # Customized import
-from models.rbsimclr import RBSimCLR
+from models.identity import *
+from models.rbsimclr import *
 from data.dataset import *
 from loss import PairwiseSimilarity, RBSimCLRLoss
 import time
@@ -9,13 +10,15 @@ from utils import *
 
 
 def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, criterion,
-                     logger, max_epoch=100, n_steps_show=128, n_epoch_checkpoint=10,
+                     logger, max_epoch=100, n_steps_show=1, n_epoch_checkpoint=10,
                      device=DEVICE):
 
     print(f"Device: {device}")
     # TODO: (Xiaoyang) Enable checkpoint loading if necessary
     warmupscheduler = scheduler['warmupscheduler']
     mainscheduler = scheduler['mainscheduler']
+    tri_criterion = criterion['tri_criterion']
+    val_criterion = criterion['val_criterion']
 
     # Basic stats
     current_epoch = 0
@@ -28,7 +31,7 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
         tr_loss_epoch = []
         # TODO: (Xiaoyang) Sample attacks here
         # e.g. Attacker = Attack(type, metadata)
-        for step, (x_i, x_j, x) in enumerate(train_loader):
+        for step, ((x_i, x_j, x), y) in enumerate(train_loader):
             optimizer.zero_grad()
             # Get augmented and attacked images
             x_i = x_i.squeeze().to(device).float()
@@ -36,11 +39,9 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
             # x_adv = Attacker(model, x, target, device)
             x_adv = x_j.squeeze().to(device).float()
             # Get latent representation
-            z_i = model(x_i)
-            z_j = model(x_j)
-            z_adv = model(x_adv)
+            h_i, h_j, h_adv, z_i, z_j, z_adv = model(x_i, x_j, x_adv)
 
-            loss = criterion(z_i, z_j, z_adv)
+            loss = tri_criterion(z_i, z_j, z_adv)
             loss.backward()
             optimizer.step()
 
@@ -67,18 +68,16 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
         model.eval()
         with torch.no_grad():
             val_loss_epoch = []
-            for step, (x_i, x_j, x) in enumerate(val_loader):
+            for step, ((x_i, x_j, x), y) in enumerate(val_loader):
 
                 x_i = x_i.squeeze().to(device).float()
                 x_j = x_j.squeeze().to(device).float()
                 # x_adv = Attacker(x)
                 x_adv = x_j.squeeze().to(device).float()
                 # Get latent representation
-                z_i = model(x_i)
-                z_j = model(x_j)
-                z_adv = model(x_adv)
+                h_i, h_j, h_adv, z_i, z_j, z_adv = model(x_i, x_j, x_adv)
 
-                loss = criterion(z_i, z_j, z_adv)
+                loss = val_criterion(z_i, z_j, z_adv)
 
                 # Logging & show validation statistics
                 val_loss_epoch.append(loss.item())
@@ -107,9 +106,15 @@ if __name__ == '__main__':
     num_views = 2
     train_dataset = dataset.get_dataset('cifar10_tri', num_views)
     val_dataset = dataset.get_dataset('cifar10_val', num_views)
+    # Batch size config
+    bsz_tri, bsz_val = 128, 64
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=32, shuffle=True,
+        train_dataset, batch_size=bsz_tri, shuffle=True,
         num_workers=2, pin_memory=True, drop_last=True)
+    val_loader = torch.utils.data.DataLoader(
+        train_dataset, batch_size=bsz_val, shuffle=True,
+        num_workers=2, pin_memory=True, drop_last=True)
+    # Model and training config
     model = RBSimCLR(128)
     optimizer = torch.optim.Adam(
         model.parameters(), lr=1e-3, betas=(0.5, 0.999))
@@ -118,10 +123,18 @@ if __name__ == '__main__':
     # SCHEDULER FOR COSINE DECAY
     mainscheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
         optimizer, 500, eta_min=0.05, last_epoch=-1, verbose=True)
+    scheduler = {
+        'warmupscheduler': warmupscheduler,
+        'mainscheduler': mainscheduler
+    }
     # LOSS FUNCTION
-    criterion = RBSimCLRLoss(batch_size=128, temperature=0.5)
-    RBSimCLR_trainer(model, )
-
-    train_loader, val_loader, optimizer, scheduler, criterion,
-                     logger, max_epoch = 100, n_steps_show = 128, n_epoch_checkpoint = 10,
-                     device = DEVICE):
+    tri_criterion = RBSimCLRLoss(batch_size=bsz_tri, temperature=0.5)
+    val_criterion = RBSimCLRLoss(batch_size=bsz_val, temperature=0.5)
+    criterion = {
+        'tri_criterion': tri_criterion,
+        'val_criterion': val_criterion
+    }
+    # Logger
+    logger = Logger()
+    RBSimCLR_trainer(model, train_loader, val_loader,
+                     optimizer, scheduler, criterion, logger)
