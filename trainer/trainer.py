@@ -7,19 +7,6 @@ from loss import PairwiseSimilarity, RBSimCLRLoss
 import time
 from utils import *
 
-model = RBSimCLR(128)
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, betas=(0.5, 0.999))
-
-warmupscheduler = torch.optim.lr_scheduler.LambdaLR(
-    optimizer, lambda epoch: (epoch+1)/10.0, verbose=True)
-
-# SCHEDULER FOR COSINE DECAY
-mainscheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
-    optimizer, 500, eta_min=0.05, last_epoch=-1, verbose=True)
-
-# LOSS FUNCTION
-criterion = RBSimCLRLoss(batch_size=128, temperature=0.5)
-
 
 def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, criterion,
                      logger, max_epoch=100, n_steps_show=128, n_epoch_checkpoint=10,
@@ -47,7 +34,7 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
             x_i = x_i.squeeze().to(device).float()
             x_j = x_j.squeeze().to(device).float()
             # x_adv = Attacker(model, x, target, device)
-            x_adv = None
+            x_adv = x_j.squeeze().to(device).float()
             # Get latent representation
             z_i = model(x_i)
             z_j = model(x_j)
@@ -85,7 +72,7 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
                 x_i = x_i.squeeze().to(device).float()
                 x_j = x_j.squeeze().to(device).float()
                 # x_adv = Attacker(x)
-                x_adv = None
+                x_adv = x_j.squeeze().to(device).float()
                 # Get latent representation
                 z_i = model(x_i)
                 z_j = model(x_j)
@@ -100,6 +87,7 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
         if (epoch+1) % n_epoch_checkpoint == 0:
             checkpoint(model, optimizer, mainscheduler, current_epoch,
                        logger, "RBSimCLR_epoch_{}_checkpoint.pt")
+
         # Logging & Show epoch-level statistics
         print(
             f"Epoch [{epoch+1}/{max_epoch}]\t Training Loss: {np.mean(tr_loss_epoch)}\t lr: {round(lr, 5)}")
@@ -114,3 +102,26 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
 
 if __name__ == '__main__':
     ic("RBSimCLR trainer")
+    # Get dataset
+    dataset = ContrastiveLearningDataset("./datasets")
+    num_views = 2
+    train_dataset = dataset.get_dataset('cifar10_tri', num_views)
+    val_dataset = dataset.get_dataset('cifar10_val', num_views)
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset, batch_size=32, shuffle=True,
+        num_workers=2, pin_memory=True, drop_last=True)
+    model = RBSimCLR(128)
+    optimizer = torch.optim.Adam(
+        model.parameters(), lr=1e-3, betas=(0.5, 0.999))
+    warmupscheduler = torch.optim.lr_scheduler.LambdaLR(
+        optimizer, lambda epoch: (epoch+1)/10.0, verbose=True)
+    # SCHEDULER FOR COSINE DECAY
+    mainscheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
+        optimizer, 500, eta_min=0.05, last_epoch=-1, verbose=True)
+    # LOSS FUNCTION
+    criterion = RBSimCLRLoss(batch_size=128, temperature=0.5)
+    RBSimCLR_trainer(model, )
+
+    train_loader, val_loader, optimizer, scheduler, criterion,
+                     logger, max_epoch = 100, n_steps_show = 128, n_epoch_checkpoint = 10,
+                     device = DEVICE):
