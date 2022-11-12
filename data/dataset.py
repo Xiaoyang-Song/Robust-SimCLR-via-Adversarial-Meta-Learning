@@ -33,13 +33,19 @@ class ContrastiveLearningDataset:
                                               transforms.ToTensor()])
         return data_transforms
 
-    def get_dataset(self, name, n_views):
-        valid_datasets = {'cifar10': lambda: datasets.CIFAR10(self.root_folder, train=True,
-                                                              transform=ContrastiveLearningViewGenerator(
-                                                                  self.get_simclr_pipeline_transform(
-                                                                      224),
-                                                                  n_views),
-                                                              download=True),
+    def get_dataset(self, name, n_views, size=224):
+        valid_datasets = {'cifar10_tri': lambda: datasets.CIFAR10(self.root_folder, train=True,
+                                                                  transform=ContrastiveLearningViewGenerator(
+                                                                      self.get_simclr_pipeline_transform(
+                                                                          size),
+                                                                      n_views),
+                                                                  download=True),
+                          'cifar10_val': lambda: datasets.CIFAR10(self.root_folder, train=False,
+                                                                  transform=ContrastiveLearningViewGenerator(
+                                                                      self.get_simclr_pipeline_transform(
+                                                                          size),
+                                                                      n_views),
+                                                                  download=True),
 
                           'stl10': lambda: datasets.STL10(self.root_folder, split='unlabeled',
                                                           transform=ContrastiveLearningViewGenerator(
@@ -75,9 +81,12 @@ if __name__ == '__main__':
     ic("Data Augmentation & Visualization")
     dataset = ContrastiveLearningDataset("./datasets")
     num_views = 2
-    train_dataset = dataset.get_dataset('cifar10', num_views)
+    train_dataset = dataset.get_dataset('cifar10_tri', num_views)
     ic(len(train_dataset))
     ic(len(train_dataset[0][0]))
+    val_dataset = dataset.get_dataset('cifar10_val', num_views)
+    ic(len(val_dataset))
+    ic(len(val_dataset[0][0]))
     # Visualize example images
     img_view = torch.stack(train_dataset[0][0])
     ic(img_view.shape)

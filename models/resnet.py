@@ -1,5 +1,5 @@
 import torchvision
-from identity import *
+from models.identity import *
 from icecream import ic
 
 
