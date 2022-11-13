@@ -73,9 +73,10 @@ class MetaRBSimCLR(nn.Module):
                 # Save local model params
                 self.local_model_params.append(self.local_model.state_dict())
 
+            tr_loss_epoch = []
             # Starting global updates
             for idx, atk in enumerate(attacks):
-                # Load global model states
+                # Load global model states & Initialize model
                 self.local_model.load_state_dict(self.local_model_params[idx])
                 # Sample batch of images
                 batch = sample_batch(dset, self.sample_bsz)
@@ -87,14 +88,19 @@ class MetaRBSimCLR(nn.Module):
                 # Forward pass
                 _, _, _, z_i, z_j, z_adv = self.local_model(
                     x_i, x_j, x_adv)
-                # Compute loss w.r.t optimal local model
+                # Compute loss & gradient w.r.t optimal local model
                 loss = self.criterion(z_i, z_j, z_adv)
                 grad = torch.autograd.grad(loss, self.local_model.parameters())
 
-                # Global update step:
+                # Log useful stats
+                tr_loss_epoch.append(loss)
+
+                # Global update step for meta model:
                 for layer_grad, param in zip(grad, self.meta_model.parameters()):
                     param.data -= self.beta * layer_grad
 
+            print(
+                f"Epoch [{epoch+1}/{self.max_epoch}]\t Training Loss: {np.mean(tr_loss_epoch)}")
             # Checkpointing
             if (epoch+1) % self.n_epoch_checkpoint == 0:
                 checkpoint(self.meta_model, None, None, epoch,
@@ -123,7 +129,8 @@ if __name__ == '__main__':
     #     alpha=1e-3, beta=1e-3
     # )
 
-    model = RBSimCLR(128)
+    # Test global update step
+    # model = RBSimCLR(128)
     # x = torch.ones(
     #     (2, 3, 224, 224), dtype=torch.float32, requires_grad=True)
     # y = torch.ones(
@@ -137,7 +144,7 @@ if __name__ == '__main__':
     # for data, param in zip(grad, model.parameters()):
     #     print(data.data.shape)
     #     ic(param.data.shape)
-    print(list(model.parameters())[-1])
-    for param in model.parameters():
-        param.data = torch.zeros(param.data.shape)
-    print(list(model.parameters())[-1])
+    # print(list(model.parameters())[-1])
+    # for param in model.parameters():
+    #     param.data = torch.zeros(param.data.shape)
+    # print(list(model.parameters())[-1])
