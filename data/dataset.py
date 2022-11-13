@@ -82,8 +82,11 @@ if __name__ == '__main__':
     dataset = ContrastiveLearningDataset("./datasets")
     num_views = 2
     train_dataset = dataset.get_dataset('cifar10_tri', num_views)
-    ic(len(train_dataset))
+    ic(len(train_dataset[0]))
     ic(len(train_dataset[0][0]))
+    ic(torch.stack(train_dataset[0][0]).shape)
+    ic(train_dataset[0][0][0].shape)
+    ic(len(train_dataset[1]))
     val_dataset = dataset.get_dataset('cifar10_val', num_views)
     ic(len(val_dataset))
     ic(len(val_dataset[0][0]))

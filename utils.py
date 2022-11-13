@@ -1,10 +1,12 @@
 import math
+from random import random
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib import markers
 import torch
 import numpy as np
 import os
+from icecream import ic
 
 # Device Auto-Configuration (Compatible with GPU training)
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -18,6 +20,21 @@ def checkpoint(model, optimizer, scheduler, current_epoch, logger, filename):
                 'scheduler_state_dict': scheduler.state_dict(),
                 'logger': logger
                 }, out)
+
+
+def sample_batch(dset, bsz):
+    num_pts = len(dset)
+    assert num_pts >= bsz
+    random_idx = np.random.choice(num_pts, bsz, replace=False)
+    ic("Starting sample")
+    
+    # Slow
+    # loader = torch.utils.data.DataLoader(
+    #     dset, batch_size=bsz, shuffle=True,
+    #     num_workers=2, pin_memory=True, drop_last=True)
+    # ic(iter(loader)[0])
+    # ic(len(iter(loader)))
+    # return next(iter(loader))[0]
 
 
 class Logger():
@@ -45,3 +62,7 @@ class Logger():
 
     def log_lr_epoch(self, lr):
         self.lr.append(lr)
+
+
+if __name__ == '__main__':
+    ic("utils")
