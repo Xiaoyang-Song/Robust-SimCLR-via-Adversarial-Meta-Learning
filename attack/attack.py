@@ -43,7 +43,7 @@ class FGSMAttack(nn.Module):
         # The perturbation of epsilon
         self._type = _type
 
-    def perturb(self  ):
+    def perturb(self):
         # original_images: values are within self.min_val and self.max_val
         # The adversaries created from random close points to the original data
         #todo:do we need loss or just provide x
