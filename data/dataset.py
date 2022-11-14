@@ -94,13 +94,14 @@ if __name__ == '__main__':
     img_view = torch.stack(train_dataset[0][0])
     ic(img_view.shape)
     ic(img_view[0].shape)
-    for idx in range(num_views):
-        Image.fromarray(np.array(img_view[idx].reshape(224, 224, 3)), 'RGB').save(
-            f"data/example/view{idx}.png")
+    plt.imshow(np.array(img_view[2].reshape(224, 224, 3)))
+    # for idx in range(num_views):
+    #     Image.fromarray(np.array(img_view[idx].reshape(224, 224, 3)), 'RGB').save(
+    #         f"data/example/view{idx}.png")
     # View original images
-    cifar_tri, _, _, _ = CIFAR10()
-    plt.imshow(np.array(cifar_tri[0][0].permute(1, 2, 0)))
-    # plt.show()
+    # cifar_tri, _, _, _ = CIFAR10()
+    # plt.imshow(np.array(cifar_tri[0][0].permute(1, 2, 0)))
+    plt.show()
 
     # Check dataloader shape
     train_loader = torch.utils.data.DataLoader(
