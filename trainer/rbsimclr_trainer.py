@@ -10,7 +10,7 @@ from utils import *
 
 
 def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, criterion,
-                     logger, max_epoch=100, n_steps_show=1, n_epoch_checkpoint=10,
+                     logger, train_batch_size, test_batch_size, max_epoch=100, n_steps_show=1, n_epoch_checkpoint=10,
                      device=DEVICE):
 
     print(f"Device: {device}")
@@ -29,7 +29,7 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
         # TRAINING phase
         model.train()
         tr_loss_epoch = []
-        # TODO: (Xiaoyang) Sample attacks here
+        # TODO: Sample attack (for train & test) sample with dict
         # e.g. Attacker = Attack(type, metadata)
         for step, ((x_i, x_j, x), y) in enumerate(train_loader):
             optimizer.zero_grad()
@@ -37,7 +37,7 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
             x_i = x_i.squeeze().to(device).float()
             x_j = x_j.squeeze().to(device).float()
             # x_adv = Attacker(model, x, target, device)
-            # TODO: (Xiaoyang) Call function to get adversarial sample
+            # TODO:
             x_adv = None
             # Get latent representation
             h_i, h_j, h_adv, z_i, z_j, z_adv = model(x_i, x_j, x_adv)
@@ -75,7 +75,7 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
                 x_j = x_j.squeeze().to(device).float()
                 # x_adv = Attacker(x)
                 # x_adv = x_j.squeeze().to(device).float() # Test
-                # TODO: (Xiaoyang) Call function to get adversarial sample
+                #TODO: Evaluation -->
                 x_adv = None
                 # Get latent representation
                 h_i, h_j, h_adv, z_i, z_j, z_adv = model(x_i, x_j, x_adv)

@@ -12,6 +12,7 @@ from icecream import ic
 from models.projector import Projector
 from collections import OrderedDict
 from attack import PGDAttack, FGSMAttack
+from utils import *
 from PIL import Image
 import PIL
 
@@ -24,15 +25,16 @@ start_epoch = 0  # start from epoch 0 or last checkpoint epoch
 
 model= get_resnet("resnet50", True)
 Linear = nn.Sequential(nn.Linear(512 , 10))
-# train_dataset, val_dataset, train_loader, val_loader = CIFAR10(2,2)
+
 
 dataset = ContrastiveLearningDataset("./datasets")
 num_views = 2
 train_dataset = dataset.get_dataset('cifar10_tri', num_views)
-# train_loader = torch.utils.data.DataLoader(
-#         train_dataset, batch_size=2, shuffle=True)
-
-img_view = torch.stack(train_dataset[0][0])
+train_loader = torch.utils.data.DataLoader(
+        train_dataset, batch_size=2, shuffle=True)
+x_i, x_j, x= next(iter(train_loader))[0]
+img_view = x_i
+#img_view = torch.stack(train_dataset[0][0], train_dataset[0][0])
 
 criterion = nn.CrossEntropyLoss()
 use_cuda = torch.cuda.is_available()
@@ -44,11 +46,11 @@ if use_cuda:
 
 #attacker = PGDAttack(model, Linear, epsilon=0.0314, alpha=0.007, min_val=0.0, max_val=1.0, max_iters=10, _type="linf")
 def test_singleimgpgd(img,idx, losstype = "mse"):
-
+    #print(img.shape)
     base_optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
     projector = Projector(1)
     name = "pgd"
-    attacker = PGDAttack(model=model, ori=img, target=img, projector=projector, epsilon=0.0314, alpha=0.007,
+    attacker = PGDAttack(model=model, ori=img, target=img, epsilon=0.0314, alpha=0.007,
                          min_val=0.0, max_val=1.0, max_iters=10, optimizer=base_optimizer, batch_size=2,
                          temperature=0.5, loss_type=losstype
                          )
