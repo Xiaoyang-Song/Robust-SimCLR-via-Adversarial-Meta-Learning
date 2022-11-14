@@ -37,7 +37,7 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
             x_i = x_i.squeeze().to(device).float()
             x_j = x_j.squeeze().to(device).float()
             # x_adv = Attacker(model, x, target, device)
-            # TODO:
+            # TODO:use attack to perturb and create x_adv
             x_adv = None
             # Get latent representation
             h_i, h_j, h_adv, z_i, z_j, z_adv = model(x_i, x_j, x_adv)

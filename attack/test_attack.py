@@ -50,12 +50,12 @@ def test_singleimgpgd(img,idx, losstype = "mse"):
     base_optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
     projector = Projector(1)
     name = "pgd"
-    attacker = PGDAttack(model=model, ori=img, target=img, epsilon=0.0314, alpha=0.007,
+    attacker = PGDAttack(epsilon=0.0314, alpha=0.007,
                          min_val=0.0, max_val=1.0, max_iters=10, optimizer=base_optimizer, batch_size=2,
                          temperature=0.5, loss_type=losstype
                          )
 
-    adv_inputs, _ = attacker.perturb()
+    adv_inputs, _ = attacker.perturb(model, img, img)
     plt.imshow(np.array(img[idx].reshape(224, 224, 3)))
     fn1 = name + losstype + str(idx) + ".png"
     plt.savefig(fn1)
@@ -69,17 +69,13 @@ def test_singleimgpgd(img,idx, losstype = "mse"):
 
 def test_singleimgfgsm(img,idx):
 
-    base_optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
 
-    name = "pgd"
-    attacker = FGSMAttack(model=model, linear = 'None', original_images=img, labels=img,  epsilon=0.0314, alpha=0.007,
+
+    attacker = FGSMAttack( epsilon=0.0314, alpha=0.007,
                          min_val=0.0, max_val=1.0, max_iters=10)
 
-    # def __init__(self, model, linear, original_images, labels, epsilon, alpha, min_val, max_val, max_iters,
-    #              _type='linf', reduction4loss='mean', random_start=True):
-
     name = "fgsm"
-    adv_inputs, _ = attacker.perturb()
+    adv_inputs, _ = attacker.perturb(model, img, img)
     plt.imshow(np.array(img[idx].reshape(224, 224, 3)))
     fn1 = name  + str(idx) + ".png"
     plt.savefig(fn1)
@@ -91,82 +87,10 @@ def test_singleimgfgsm(img,idx):
     #plt.show()
 
 
-# test_singleimgpgd("pgd", img_view,0, "mse")
-# test_singleimgpgd("pgd", img_view,0, "l1")
-# test_singleimgpgd("pgd", img_view,0, "cos")
+test_singleimgpgd(img_view,0, "mse")
+test_singleimgpgd(img_view,0, "l1")
+test_singleimgpgd(img_view,0, "cos")
 
 
-#test_singleimgfgsm(img_view, 0)
+test_singleimgfgsm(img_view, 0)
 test_singleimgpgd(img_view,0, "sim")
-# def test(name, losstype="mse" ):
-#     global best_acc
-#
-#     model.eval()
-#     Linear.eval()
-#
-#     test_clean_loss = 0
-#     test_adv_loss = 0
-#     clean_correct = 0
-#     adv_correct = 0
-#     clean_acc = 0
-#     total = 0
-#     base_optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
-#
-#     for idx, (image, label) in enumerate(val_loader):
-#
-#
-#         img = image
-#         y = label
-#         print(y)
-#         print(img.shape)
-#         total += y.size(0)
-#         # ic(img.shape)
-#         # ic(model(img).shape)
-#         # out = Linear(model(img))
-#         # _, predx = torch.max(out.data, 1)
-#         # clean_loss = criterion(out, y)
-#         #
-#         # clean_correct += predx.eq(y.data).cpu().sum().item()
-#         #
-#         # clean_acc = 100. * clean_correct / total
-#         #
-#         # test_clean_loss += clean_loss.data
-#         projector = Projector(1)
-#
-#         if name == "pgd":
-#             attacker = PGDAttack(model = model, ori = image, target = image, projector = projector, epsilon=0.0314, alpha=0.007,
-#                                  min_val=0.0, max_val=1.0, max_iters=10,optimizer= base_optimizer, batch_size= 2,
-#                                  temperature=0.5, loss_type = losstype
-#                                 )
-#
-#         # self, model, ori, target, projector, epsilon, alpha, min_val, max_val,
-#         # max_iters, optimizer, batch_size, temperature,
-#         # random_start = True, _type = 'linf', loss_type = 'sim', regularize = 'original'
-#         adv_inputs, _= attacker.perturb()
-#         print("shape of adv_Input", adv_inputs.shape)
-#         out = model(adv_inputs)
-#         # _, index = torch.max(out, 1)
-#         # percentage = torch.nn.functional.softmax(out, dim=1)[0] * 100
-#         print("out in the followinf ")
-#         print(out.shape) #todo why 2*1000? cuz pretrained
-#         # print(percentage)
-#         # print(y[index[0]], percentage[index[0]].item())
-#         #print(out.shape)
-#         #ic(len(out))
-#         #print(adv_inputs.shape)
-#         # plt.imshow(np.array(cifar_tri[0][0].permute(1, 2, 0)))
-#         _, predx = torch.max(out.data, 1)
-#         adv_loss = criterion(out, y)
-#
-#         adv_correct += predx.eq(y.data).cpu().sum().item()
-#         adv_acc = 100. * adv_correct / total
-#
-#         test_adv_loss += adv_loss.data
-#         print('hi')
-#         break
-#
-#
-#     print("Test accuracy: {0}/{1}".format(clean_acc, adv_acc))
-#
-#     return (clean_acc, adv_acc)
-
