@@ -7,18 +7,28 @@ from data.dataset import *
 from loss import PairwiseSimilarity, RBSimCLRLoss
 import time
 from utils import *
-
+from attack.attack import PGDAttack, FGSMAttack
 
 def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, criterion,
                      logger, train_batch_size, test_batch_size, max_epoch=100, n_steps_show=1, n_epoch_checkpoint=10,
                      device=DEVICE):
-
+    attack_sample_list_train = [FGSMAttack(),
+                                PGDAttack(batch_size=train_batch_size, loss_type="mse"),
+                                PGDAttack(batch_size=train_batch_size, loss_type="sim"),
+                                PGDAttack(batch_size=train_batch_size, loss_type="l1"),
+                                PGDAttack(batch_size=train_batch_size, loss_type="cos") ]
+    attack_sample_list_test = [FGSMAttack(),
+                                PGDAttack(batch_size=test_batch_size, loss_type="mse"),
+                                PGDAttack(batch_size=test_batch_size, loss_type="sim"),
+                                PGDAttack(batch_size=test_batch_size, loss_type="l1"),
+                                PGDAttack(batch_size=test_batch_size, loss_type="cos") ]
     print(f"Device: {device}")
     # TODO: (Xiaoyang) Enable checkpoint loading if necessary
     warmupscheduler = scheduler['warmupscheduler']
     mainscheduler = scheduler['mainscheduler']
     tri_criterion = criterion['tri_criterion']
     val_criterion = criterion['val_criterion']
+
 
     # Basic stats
     current_epoch = 0
@@ -30,6 +40,10 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
         model.train()
         tr_loss_epoch = []
         # TODO: Sample attack (for train & test) sample with dict
+
+        rand_idx = np.random.randint(5)
+        attacker_train = attack_sample_list_train[rand_idx]
+        attacker_test = attack_sample_list_test[rand_idx]
         # e.g. Attacker = Attack(type, metadata)
         for step, ((x_i, x_j, x), y) in enumerate(train_loader):
             optimizer.zero_grad()
@@ -38,7 +52,18 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
             x_j = x_j.squeeze().to(device).float()
             # x_adv = Attacker(model, x, target, device)
             # TODO:use attack to perturb and create x_adv
-            x_adv = None
+            if rand_idx >0:
+                x_adv = attacker_train.perturb(model = model,
+                                               original_images = x,
+                                               target = x,
+                                               optimizer = optimizer)
+            else:
+
+                x_adv = attacker_train.perturb(model = model,
+                                               original_images = x,
+                                               target = x)
+
+
             # Get latent representation
             h_i, h_j, h_adv, z_i, z_j, z_adv = model(x_i, x_j, x_adv)
 
@@ -76,7 +101,17 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
                 # x_adv = Attacker(x)
                 # x_adv = x_j.squeeze().to(device).float() # Test
                 #TODO: Evaluation -->
-                x_adv = None
+                if rand_idx > 0:
+                    x_adv = attacker_test.perturb(model=model,
+                                                   original_images=x,
+                                                   target=x,
+                                                   optimizer=optimizer)
+                else:
+
+                    x_adv = attacker_test.perturb(model=model,
+                                                   original_images=x,
+                                                   target=x)
+
                 # Get latent representation
                 h_i, h_j, h_adv, z_i, z_j, z_adv = model(x_i, x_j, x_adv)
 

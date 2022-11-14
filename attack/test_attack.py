@@ -47,15 +47,15 @@ if use_cuda:
 #attacker = PGDAttack(model, Linear, epsilon=0.0314, alpha=0.007, min_val=0.0, max_val=1.0, max_iters=10, _type="linf")
 def test_singleimgpgd(img,idx, losstype = "mse"):
     #print(img.shape)
-    base_optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+
     projector = Projector(1)
     name = "pgd"
     attacker = PGDAttack(epsilon=0.0314, alpha=0.007,
-                         min_val=0.0, max_val=1.0, max_iters=10, optimizer=base_optimizer, batch_size=2,
+                         min_val=0.0, max_val=1.0, max_iters=10, batch_size=2,
                          temperature=0.5, loss_type=losstype
                          )
-
-    adv_inputs, _ = attacker.perturb(model, img, img)
+    base_optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+    adv_inputs, _ = attacker.perturb(model, img, img, optimizer=base_optimizer)
     plt.imshow(np.array(img[idx].reshape(224, 224, 3)))
     fn1 = name + losstype + str(idx) + ".png"
     plt.savefig(fn1)

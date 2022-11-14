@@ -97,9 +97,8 @@ class FGSMAttack(nn.Module):
 
         return x.detach(), loss
 class PGDAttack(nn.Module):
-    def __init__(self, epsilon, alpha, min_val, max_val,
-                 max_iters,optimizer, batch_size, temperature,
-                 random_start = True, _type='linf', loss_type='sim'):
+    def __init__(self, batch_size, loss_type, epsilon=0.0314, alpha=0.07, min_val=0.0, max_val=0.7,
+                 max_iters=10,  temperature=0.5, random_start = True, _type='linf'):
         super(PGDAttack, self).__init__()
 
         # Maximum perturbation
@@ -117,12 +116,12 @@ class PGDAttack(nn.Module):
         # loss type
         self.loss_type = loss_type
         self.type_attack = TypeAttack.PGD
-        self.optimizer = optimizer
+        #self.optimizer = optimizer
         self.batch_size =batch_size
         self.temperature = temperature
         self.random_start = random_start
 
-    def perturb(self,model, original_images, target):
+    def perturb(self,model, original_images, target, optimizer):
         if self.random_start:
             rand_perturb = torch.FloatTensor(original_images.shape).uniform_(
                 -self.epsilon, self.epsilon)
@@ -172,7 +171,7 @@ class PGDAttack(nn.Module):
 
         model.train()
 
-        self.optimizer.zero_grad()
+        optimizer.zero_grad()
 
         if self.loss_type == 'mse':
             loss = F.mse_loss(model(x), model(target)) * (1.0 / batch_size)
