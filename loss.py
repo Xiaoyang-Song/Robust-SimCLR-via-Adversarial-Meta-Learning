@@ -82,10 +82,13 @@ class RBSimCLRLoss(nn.Module):
         # Define pairwise similarity
         self.SIM = PairwiseSimilarity(self.bsz, self.temperature)
 
-    def forward(self, z1, z2, z3):
+    def forward(self, z1, z2, z3=None):
         # By default z3 is the adversarial branch
         # TODO: (Xiaoyang) modify this to enable weighting
-        return self.SIM(z1, z2) + self.SIM(z1, z3) + self.SIM(z2, z3)
+        if z3 is None:
+            return self.SIM(z1, z2)
+        else:
+            return self.SIM(z1, z2) + self.SIM(z1, z3) + self.SIM(z2, z3)
 
 
 if __name__ == '__main__':
