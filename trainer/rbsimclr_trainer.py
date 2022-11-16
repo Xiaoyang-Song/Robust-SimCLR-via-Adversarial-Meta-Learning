@@ -144,7 +144,7 @@ if __name__ == '__main__':
         train_dataset, batch_size=bsz_val, shuffle=True,
         num_workers=2, pin_memory=True, drop_last=True)
     # Model and training config
-    model = RBSimCLR(128)
+    model = RBSimCLR(128).to(DEVICE)
     optimizer = torch.optim.Adam(
         model.parameters(), lr=1e-3, betas=(0.5, 0.999))
     warmupscheduler = torch.optim.lr_scheduler.LambdaLR(
