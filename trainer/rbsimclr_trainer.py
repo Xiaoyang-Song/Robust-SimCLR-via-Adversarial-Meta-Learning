@@ -10,7 +10,7 @@ from utils import *
 from attack.attack import PGDAttack, FGSMAttack
 
 def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, criterion,
-                     logger, train_batch_size, test_batch_size, max_epoch=10, n_steps_show=128, n_epoch_checkpoint= 1,
+                     logger, train_batch_size, test_batch_size, max_epoch=10, n_steps_show=1, n_epoch_checkpoint= 1,
                      device=DEVICE):
     attack_sample_list_train = [FGSMAttack(),
                                 PGDAttack(batch_size=train_batch_size, loss_type="mse"),
@@ -51,13 +51,14 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
             # Get augmented and attacked images
             x_i = x_i.squeeze().to(device).float()
             x_j = x_j.squeeze().to(device).float()
+            x = x.squeeze().to(device).float()
 
             #get adversarial samples
             #todo: check whether it supports batch process
             x_adv = attacker_train.perturb(input_model = model,
                                                original_images = x,
                                                target = x,
-                                              )
+                                              ).to(device)
 
             # Get latent representation
             h_i, h_j, h_adv, z_i, z_j, z_adv = model(x_i, x_j, x_adv)
@@ -93,13 +94,14 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
 
                 x_i = x_i.squeeze().to(device).float()
                 x_j = x_j.squeeze().to(device).float()
+                x = x.squeeze().to(device).float()
                 # x_adv = Attacker(x)
                 # x_adv = x_j.squeeze().to(device).float() # Test
                 #TODO: Evaluation -->
 
                 x_adv = attacker_test.perturb(input_model=model,
                                                    original_images=x,
-                                                   target=x)
+                                                   target=x).to(device)
 
 
                 # Get latent representation
