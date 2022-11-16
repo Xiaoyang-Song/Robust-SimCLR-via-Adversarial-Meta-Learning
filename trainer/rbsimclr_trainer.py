@@ -11,7 +11,7 @@ from attack.attack import PGDAttack, FGSMAttack
 
 
 def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, criterion,
-                     logger, train_batch_size, test_batch_size, max_epoch=10, n_steps_show=128, n_epoch_checkpoint=1,
+                     logger, train_batch_size, test_batch_size, max_epoch=10, n_steps_show=64, n_epoch_checkpoint=1,
                      device=DEVICE):
 
     attack_sample_list_train = [FGSMAttack(),
