@@ -14,6 +14,7 @@ class RBSimCLR(nn.Module):
         super(RBSimCLR, self).__init__()
 
         self.adversarial = adversarial
+
         # Handle default backbone
         if encoder is None:
             self.encoder = get_resnet('resnet18')
@@ -42,8 +43,9 @@ class RBSimCLR(nn.Module):
         z_i = self.projector(h_i)
         z_j = self.projector(h_j)
         # adversarial branch
-        if self.adversarial:
-            assert x_adv is not None
+        # if self.adversarial:
+        if x_adv is not None:
+            #assert x_adv is not None
             h_adv = self.encoder(x_adv)
             z_adv = self.projector(h_adv)
             return h_i, h_j, h_adv, z_i, z_j, z_adv
