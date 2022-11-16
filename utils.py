@@ -50,6 +50,8 @@ class Logger():
         # self.val_loss_steps = []
         # lr tracker
         self.lr = []
+        # attack check
+        self.attack = []
 
     def log_train_step(self, loss):
         self.tr_loss_steps.append(loss)
@@ -62,6 +64,9 @@ class Logger():
 
     def log_lr_epoch(self, lr):
         self.lr.append(lr)
+
+    def log_attack_epoch(self, atk):
+        self.attack.append(atk)
 
 
 if __name__ == '__main__':

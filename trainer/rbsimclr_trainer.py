@@ -13,8 +13,6 @@ from attack.attack import PGDAttack, FGSMAttack
 def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, criterion,
                      logger, train_batch_size, test_batch_size, max_epoch=10, n_steps_show=128, n_epoch_checkpoint=1,
                      device=DEVICE):
-    checkpoint(model, optimizer, mainscheduler, 0,
-               logger, "RBSimCLR_epoch_{}_checkpoint.pt")
 
     attack_sample_list_train = [FGSMAttack(),
                                 PGDAttack(batch_size=train_batch_size,
@@ -38,6 +36,8 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
     mainscheduler = scheduler['mainscheduler']
     tri_criterion = criterion['tri_criterion']
     val_criterion = criterion['val_criterion']
+    checkpoint(model, optimizer, mainscheduler, 0,
+               logger, "RBSimCLR_epoch_{}_checkpoint.pt")
 
     # Basic stats
     current_epoch = 0
@@ -51,6 +51,7 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
         # TODO: Sample attack (for train & test) sample with dict
 
         rand_idx = np.random.randint(5)
+        logger.log_attack_epoch(rand_idx)
         print("rand_idx is", rand_idx)
         attacker_train = attack_sample_list_train[rand_idx]
         attacker_test = attack_sample_list_test[rand_idx]
