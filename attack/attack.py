@@ -60,10 +60,10 @@ class FGSMAttack(nn.Module):
             rand_perturb = torch.FloatTensor(original_images.shape).uniform_(
                 -self.epsilon, self.epsilon)
             rand_perturb = rand_perturb.to(DEVICE)
-            x = original_images.clone() + rand_perturb
+            x = original_images.clone().to(DEVICE) + rand_perturb
             x = torch.clamp(x, self.min_val, self.max_val)
         else:
-            x = original_images.clone()
+            x = original_images.clone().to(DEVICE)
 
         x.requires_grad = True
 
@@ -129,13 +129,13 @@ class PGDAttack(nn.Module):
         if self.random_start:
             rand_perturb = torch.FloatTensor(original_images.shape).uniform_(
                 -self.epsilon, self.epsilon)
-            if torch.cuda.is_available():
-                rand_perturb = rand_perturb.float().to(DEVICE)
-            x = original_images.float().clone() + rand_perturb
+
+            rand_perturb = rand_perturb.float().to(DEVICE)
+            x = original_images.float().clone().to(DEVICE) + rand_perturb
             x = torch.clamp(x, self.min_val, self.max_val)
 
         else:
-            x = original_images.clone()
+            x = original_images.clone().to(DEVICE)
 
         x.requires_grad = True
 
