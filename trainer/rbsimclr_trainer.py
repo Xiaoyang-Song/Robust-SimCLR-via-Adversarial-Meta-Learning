@@ -138,7 +138,7 @@ if __name__ == '__main__':
     train_dataset = dataset.get_dataset('cifar10_tri', num_views)
     val_dataset = dataset.get_dataset('cifar10_val', num_views)
     # Batch size config
-    bsz_tri, bsz_val = 256, 128
+    bsz_tri, bsz_val = 64, 64
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=bsz_tri, shuffle=True,
         num_workers=2, pin_memory=True, drop_last=True)
