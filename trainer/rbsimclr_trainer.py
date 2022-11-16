@@ -2,7 +2,7 @@ import torch
 import torchvision
 # Customized import
 from models.identity import *
-from models.rbsimclr import *
+from models.RBSimCLR import *
 from data.dataset import *
 from loss import PairwiseSimilarity, RBSimCLRLoss
 import time
@@ -10,7 +10,7 @@ from utils import *
 from attack.attack import PGDAttack, FGSMAttack
 
 def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, criterion,
-                     logger, train_batch_size, test_batch_size, max_epoch=100, n_steps_show=1, n_epoch_checkpoint=10,
+                     logger, train_batch_size, test_batch_size, max_epoch=1, n_steps_show=128, n_epoch_checkpoint= 1,
                      device=DEVICE):
     attack_sample_list_train = [FGSMAttack(),
                                 PGDAttack(batch_size=train_batch_size, loss_type="mse"),
@@ -50,19 +50,13 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
             # Get augmented and attacked images
             x_i = x_i.squeeze().to(device).float()
             x_j = x_j.squeeze().to(device).float()
-            # x_adv = Attacker(model, x, target, device)
-            # TODO:use attack to perturb and create x_adv
-            if rand_idx >0:
-                x_adv = attacker_train.perturb(model = model,
+
+            #get adversarial samples
+            #todo: check whether it supports batch process
+            x_adv = attacker_train.perturb(model = model,
                                                original_images = x,
                                                target = x,
-                                               optimizer = optimizer)
-            else:
-
-                x_adv = attacker_train.perturb(model = model,
-                                               original_images = x,
-                                               target = x)
-
+                                              )
 
             # Get latent representation
             h_i, h_j, h_adv, z_i, z_j, z_adv = model(x_i, x_j, x_adv)
@@ -101,16 +95,11 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
                 # x_adv = Attacker(x)
                 # x_adv = x_j.squeeze().to(device).float() # Test
                 #TODO: Evaluation -->
-                if rand_idx > 0:
-                    x_adv = attacker_test.perturb(model=model,
-                                                   original_images=x,
-                                                   target=x,
-                                                   optimizer=optimizer)
-                else:
 
-                    x_adv = attacker_test.perturb(model=model,
+                x_adv = attacker_test.perturb(model=model,
                                                    original_images=x,
                                                    target=x)
+
 
                 # Get latent representation
                 h_i, h_j, h_adv, z_i, z_j, z_adv = model(x_i, x_j, x_adv)
@@ -142,10 +131,11 @@ if __name__ == '__main__':
     # Get dataset
     dataset = ContrastiveLearningDataset("./datasets")
     num_views = 2
+    print(DEVICE)
     train_dataset = dataset.get_dataset('cifar10_tri', num_views)
     val_dataset = dataset.get_dataset('cifar10_val', num_views)
     # Batch size config
-    bsz_tri, bsz_val = 128, 64
+    bsz_tri, bsz_val = 256, 128
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=bsz_tri, shuffle=True,
         num_workers=2, pin_memory=True, drop_last=True)
@@ -175,4 +165,4 @@ if __name__ == '__main__':
     # Logger
     logger = Logger()
     RBSimCLR_trainer(model, train_loader, val_loader,
-                     optimizer, scheduler, criterion, logger)
+                     optimizer, scheduler, criterion, logger, bsz_tri, bsz_val)

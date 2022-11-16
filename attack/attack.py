@@ -5,6 +5,7 @@ from loss import RBSimCLRLoss
 import torch.nn as nn
 from icecream import ic
 from utils import *
+from copy import deepcopy
 def project(x, original_x, epsilon, _type='linf'):
     if _type == 'linf':
         max_x = original_x + epsilon
@@ -50,10 +51,10 @@ class FGSMAttack(nn.Module):
         #self.original_images = original_images
         #self.labels = labels
 
-    def perturb(self, model, original_images, target):
+    def perturb(self, input_model, original_images, target):
         # original_images: values are within self.min_val and self.max_val
         # The adversaries created from random close points to the original data
-
+        model = deepcopy(input_model)
 
         if self.random_start:
             rand_perturb = torch.FloatTensor(original_images.shape).uniform_(
@@ -68,14 +69,15 @@ class FGSMAttack(nn.Module):
 
         model.eval()
 
+
         #todo: why severl iteraaions?
 
 
-        model.zero_grad()
-        outputs = model(x)
+        #model.zero_grad()
+        _, _, z_i, z_j = model(x, target)
 
 
-        loss = F.mse_loss(outputs, model(target))
+        loss = F.mse_loss(z_i, z_j)
 
         grad_outputs = None
         grads = torch.autograd.grad(loss, x, grad_outputs=grad_outputs, only_inputs=True, retain_graph=False)[0]
@@ -87,15 +89,15 @@ class FGSMAttack(nn.Module):
 
         x = torch.clamp(x, self.min_val, self.max_val)
 
-        model.train()
+        #model.train()
 
 
-        outputs = model(x)
+        # outputs = model(x)
+        #
+        # loss = F.mse_loss(outputs, model(target))
 
-        loss = F.mse_loss(outputs, model(target))
 
-
-        return x.detach(), loss
+        return x.detach()
 class PGDAttack(nn.Module):
     def __init__(self, batch_size, loss_type, epsilon=0.0314, alpha=0.07, min_val=0.0, max_val=0.7,
                  max_iters=10,  temperature=0.5, random_start = True, _type='linf'):
@@ -121,7 +123,9 @@ class PGDAttack(nn.Module):
         self.temperature = temperature
         self.random_start = random_start
 
-    def perturb(self,model, original_images, target, optimizer):
+    def perturb(self,input_model, original_images, target):
+
+        model = deepcopy(input_model)
         if self.random_start:
             rand_perturb = torch.FloatTensor(original_images.shape).uniform_(
                 -self.epsilon, self.epsilon)
@@ -137,27 +141,28 @@ class PGDAttack(nn.Module):
 
         model.eval()
 
-        batch_size = self.batch_size
+        #batch_size = self.batch_size
         criteria = RBSimCLRLoss(self.batch_size, self.temperature)
         with torch.enable_grad():
             for _iter in range(self.max_iters):
 
-                model.zero_grad()
+                #model.zero_grad()
+
+                _, _, z_i, z_j = model(x, target)
 
 
                 if self.loss_type == 'mse':
-                    loss = F.mse_loss(model(x), model(target))
+                    loss = F.mse_loss(z_i, z_j)
                 elif self.loss_type == 'sim':
 
-                    loss = criteria.forward(z1 = model(x), z2 = model(original_images), z3 = None)
+                    loss = criteria.forward(z1 = z_i, z2 = z_j, z3 = None)
 
 
                 elif self.loss_type == 'l1':
-                    loss = F.l1_loss(model(x), model(target))
+                    loss = F.l1_loss(z_i, z_j)
 
                 elif self.loss_type == 'cos':
-                    loss = 1 - F.cosine_similarity(model(x),
-                                                   model(target)).mean()
+                    loss = 1 - F.cosine_similarity(z_i, z_j).mean()
 
                 grads = torch.autograd.grad(loss, x, grad_outputs=None, only_inputs=True, retain_graph=False)[0]
 
@@ -169,25 +174,25 @@ class PGDAttack(nn.Module):
                 x = torch.clamp(x, self.min_val, self.max_val)
                 x = project(x, original_images, self.epsilon, self._type)
 
-        model.train()
+        #model.train()
 
-        optimizer.zero_grad()
+        #optimizer.zero_grad()
 
-        if self.loss_type == 'mse':
-            loss = F.mse_loss(model(x), model(target)) * (1.0 / batch_size)
-        elif self.loss_type == 'sim':
-
-
-            loss = criteria.forward(z1=model(x), z2=model(original_images), z3=None)
-        elif self.loss_type == 'l1':
-            loss = F.l1_loss(model(x), model(target)) * (1.0 / batch_size)
-        elif self.loss_type == 'l2':
-            loss = F.l2_loss(model(x), model(target))* (1.0 / batch_size)
-        elif self.loss_type == 'cos':
-            loss = 1 - F.cosine_similarity(model(x), model(target)).sum() * (
-                        1.0 / batch_size)
-        #todo: do I need to return loss?
-        return x.detach(), loss
+        # if self.loss_type == 'mse':
+        #     loss = F.mse_loss(model(x), model(target)) * (1.0 / batch_size)
+        # elif self.loss_type == 'sim':
+        #
+        #
+        #     loss = criteria.forward(z1=model(x), z2=model(original_images), z3=None)
+        # elif self.loss_type == 'l1':
+        #     loss = F.l1_loss(model(x), model(target)) * (1.0 / batch_size)
+        # elif self.loss_type == 'l2':
+        #     loss = F.l2_loss(model(x), model(target))* (1.0 / batch_size)
+        # elif self.loss_type == 'cos':
+        #     loss = 1 - F.cosine_similarity(model(x), model(target)).sum() * (
+        #                 1.0 / batch_size)
+        # #todo: do I need to return loss?
+        return x.detach()
 
 
 
