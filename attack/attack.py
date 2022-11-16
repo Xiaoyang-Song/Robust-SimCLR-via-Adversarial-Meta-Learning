@@ -28,7 +28,7 @@ class FGSMAttack(nn.Module):
         with iterative grad sign updates
     """
 
-    def __init__(self, epsilon=0.0314, alpha=0.07, min_val=0.0, max_val=1.0, max_iters=10, _type='linf',  random_start=True):
+    def __init__(self, epsilon=0.0314, alpha=0.07, min_val=0.0, max_val=1.0, max_iters=25, _type='linf',  random_start=True):
 
         # Model
         super(FGSMAttack, self).__init__()
@@ -100,7 +100,7 @@ class FGSMAttack(nn.Module):
         return x.detach()
 class PGDAttack(nn.Module):
     def __init__(self, batch_size, loss_type, epsilon=0.0314, alpha=0.07, min_val=0.0, max_val=0.7,
-                 max_iters=10,  temperature=0.5, random_start = True, _type='linf'):
+                 max_iters=25,  temperature=0.5, random_start = True, _type='linf'):
         super(PGDAttack, self).__init__()
 
         # Maximum perturbation

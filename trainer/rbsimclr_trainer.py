@@ -10,7 +10,7 @@ from utils import *
 from attack.attack import PGDAttack, FGSMAttack
 
 def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, criterion,
-                     logger, train_batch_size, test_batch_size, max_epoch=1, n_steps_show=128, n_epoch_checkpoint= 1,
+                     logger, train_batch_size, test_batch_size, max_epoch=10, n_steps_show=128, n_epoch_checkpoint= 1,
                      device=DEVICE):
     attack_sample_list_train = [FGSMAttack(),
                                 PGDAttack(batch_size=train_batch_size, loss_type="mse"),
@@ -42,6 +42,7 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
         # TODO: Sample attack (for train & test) sample with dict
 
         rand_idx = np.random.randint(5)
+        print("rand_idx is", rand_idx)
         attacker_train = attack_sample_list_train[rand_idx]
         attacker_test = attack_sample_list_test[rand_idx]
         # e.g. Attacker = Attack(type, metadata)
@@ -53,7 +54,7 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
 
             #get adversarial samples
             #todo: check whether it supports batch process
-            x_adv = attacker_train.perturb(model = model,
+            x_adv = attacker_train.perturb(input_model = model,
                                                original_images = x,
                                                target = x,
                                               )
@@ -96,7 +97,7 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
                 # x_adv = x_j.squeeze().to(device).float() # Test
                 #TODO: Evaluation -->
 
-                x_adv = attacker_test.perturb(model=model,
+                x_adv = attacker_test.perturb(input_model=model,
                                                    original_images=x,
                                                    target=x)
 
