@@ -54,7 +54,8 @@ class FGSMAttack(nn.Module):
     def perturb(self, input_model, original_images, target):
         # original_images: values are within self.min_val and self.max_val
         # The adversaries created from random close points to the original data
-        model = deepcopy(input_model)
+        #model = deepcopy(input_model)
+        model = input_model
 
         if self.random_start:
             rand_perturb = torch.FloatTensor(original_images.shape).uniform_(
@@ -89,7 +90,7 @@ class FGSMAttack(nn.Module):
 
         x = torch.clamp(x, self.min_val, self.max_val)
 
-        #model.train()
+        model.train()
 
 
         # outputs = model(x)
@@ -125,7 +126,8 @@ class PGDAttack(nn.Module):
 
     def perturb(self,input_model, original_images, target):
 
-        model = deepcopy(input_model)
+        #model = deepcopy(input_model)
+        model = input_model
         if self.random_start:
             rand_perturb = torch.FloatTensor(original_images.shape).uniform_(
                 -self.epsilon, self.epsilon)
@@ -174,7 +176,7 @@ class PGDAttack(nn.Module):
                 x = torch.clamp(x, self.min_val, self.max_val)
                 x = project(x, original_images, self.epsilon, self._type)
 
-        #model.train()
+        model.train()
 
         #optimizer.zero_grad()
 
