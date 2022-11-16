@@ -10,7 +10,7 @@ from utils import *
 from attack.attack import PGDAttack, FGSMAttack
 
 def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, criterion,
-                     logger, train_batch_size, test_batch_size, max_epoch=10, n_steps_show=1, n_epoch_checkpoint= 1,
+                     logger, train_batch_size, test_batch_size, max_epoch=10, n_steps_show=128, n_epoch_checkpoint= 1,
                      device=DEVICE):
     attack_sample_list_train = [FGSMAttack(),
                                 PGDAttack(batch_size=train_batch_size, loss_type="mse"),
@@ -138,7 +138,7 @@ if __name__ == '__main__':
     train_dataset = dataset.get_dataset('cifar10_tri', num_views)
     val_dataset = dataset.get_dataset('cifar10_val', num_views)
     # Batch size config
-    bsz_tri, bsz_val = 64, 64
+    bsz_tri, bsz_val = 128, 64
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=bsz_tri, shuffle=True,
         num_workers=2, pin_memory=True, drop_last=True)
