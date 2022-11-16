@@ -12,10 +12,11 @@ from icecream import ic
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
-def checkpoint(model, optimizer, scheduler, current_epoch, logger, filename):
+def checkpoint(model, bsz, optimizer, scheduler, current_epoch, logger, filename):
     out = os.path.join('./checkpoint/', filename.format(current_epoch))
     ic(f"Checkpoint {current_epoch} saved!")
-    torch.save({'model_state_dict': model.state_dict(),
+    torch.save({'bsz': bsz,
+                'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'scheduler_state_dict': scheduler.state_dict(),
                 'logger': logger

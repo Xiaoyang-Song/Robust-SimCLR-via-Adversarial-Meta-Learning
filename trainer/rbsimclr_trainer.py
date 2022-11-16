@@ -36,7 +36,7 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
     mainscheduler = scheduler['mainscheduler']
     tri_criterion = criterion['tri_criterion']
     val_criterion = criterion['val_criterion']
-    checkpoint(model, optimizer, mainscheduler, 0,
+    checkpoint(model, [train_batch_size, test_batch_size], optimizer, mainscheduler, 0,
                logger, "RBSimCLR_epoch_{}_checkpoint.pt")
 
     # Basic stats
@@ -123,7 +123,7 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
 
         # Checkpointing
         if (epoch+1) % n_epoch_checkpoint == 0:
-            checkpoint(model, optimizer, mainscheduler, current_epoch,
+            checkpoint(model, [train_batch_size, test_batch_size], optimizer, mainscheduler, current_epoch,
                        logger, "RBSimCLR_epoch_{}_checkpoint.pt")
 
         # Logging & Show epoch-level statistics
