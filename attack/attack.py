@@ -80,15 +80,16 @@ class FGSMAttack(nn.Module):
 
         loss = F.mse_loss(z_i, z_j)
 
-        grad_outputs = None
-        grads = torch.autograd.grad(loss, x, grad_outputs=grad_outputs, only_inputs=True, retain_graph=False)[0]
+        with torch.enable_grad():
+            grad_outputs = None
+            grads = torch.autograd.grad(loss, x, grad_outputs=grad_outputs, only_inputs=True, retain_graph=False)[0]
 
-        if self._type == 'linf':
-            scaled_g = torch.sign(grads.data)
+            if self._type == 'linf':
+                scaled_g = torch.sign(grads.data)
 
-        x.data += self.alpha * scaled_g
+            x.data += self.alpha * scaled_g
 
-        x = torch.clamp(x, self.min_val, self.max_val)
+            x = torch.clamp(x, self.min_val, self.max_val)
 
         model.train()
 
