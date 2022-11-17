@@ -72,15 +72,15 @@ class FGSMAttack(nn.Module):
 
 
         #todo: why severl iteraaions?
-
-
-        #model.zero_grad()
-        _, _, z_i, z_j = model(x, target)
-
-
-        loss = F.mse_loss(z_i, z_j)
-
         with torch.enable_grad():
+
+            #model.zero_grad()
+            _, _, z_i, z_j = model(x, target)
+
+
+            loss = F.mse_loss(z_i, z_j)
+
+
             grad_outputs = None
             grads = torch.autograd.grad(loss, x, grad_outputs=grad_outputs, only_inputs=True, retain_graph=False)[0]
 
