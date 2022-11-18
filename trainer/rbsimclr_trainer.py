@@ -11,7 +11,7 @@ from attack.attack import PGDAttack, FGSMAttack
 
 
 def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, criterion,
-                     logger, train_batch_size, test_batch_size, max_epoch=10, n_steps_show=64, n_epoch_checkpoint=1,
+                     logger: Logger, train_batch_size, test_batch_size, max_epoch=10, n_steps_show=64, n_epoch_checkpoint=1,
                      device=DEVICE):
 
     attack_sample_list_train = [FGSMAttack(),
@@ -127,6 +127,8 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
                        logger, "RBSimCLR_epoch_{}_checkpoint.pt")
 
         # Logging & Show epoch-level statistics
+        logger.log_train_epoch(np.mean(tr_loss_epoch))
+        logger.log_eval_epoch(np.mean(val_loss_epoch))
         print(
             f"Epoch [{epoch+1}/{max_epoch}]\t Training Loss: {np.mean(tr_loss_epoch)}\t lr: {round(lr, 5)}")
         print(
