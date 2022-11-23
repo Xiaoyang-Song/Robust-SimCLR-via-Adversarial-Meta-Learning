@@ -11,7 +11,7 @@ from torch.utils.tensorboard import SummaryWriter
 from attack.attack import PGDAttack, FGSMAttack
 
 
-def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, criterion, writer,
+def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, criterion, writer: SummaryWriter,
                      logger: Logger, train_batch_size, test_batch_size, max_epoch=10, n_steps_show=64, n_epoch_checkpoint=1,
                      device=DEVICE):
 

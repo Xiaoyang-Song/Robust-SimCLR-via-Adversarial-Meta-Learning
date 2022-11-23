@@ -3,7 +3,7 @@ import torch
 import torchvision
 # Customized import
 from models.identity import *
-from models.rbsimclr import *
+from models.RBSimCLR import *
 from data.dataset import *
 from loss import PairwiseSimilarity, RBSimCLRLoss
 import time
