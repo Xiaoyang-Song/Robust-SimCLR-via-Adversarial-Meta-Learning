@@ -1,0 +1,17 @@
+Due: 12/09
+
+11/23 Launch large scale training for RBSimCLR - training finish during Thxgiving (est.)
+
+During Thxgiving, 
+- Debugging & launch metalearner training
+- Implement linear evaluation
+
+Before 12/01
+- Extract original SimCLR representation on CIFAR10
+- Implement evaluation with adversarial attacks
+
+Between 12/01 - 12/09
+- Evaluate RBSimCLR representation
+- Evaluate Meta RBSimCLR representation
+- Ablation studies
+- PPT making

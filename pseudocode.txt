@@ -1,4 +1,3 @@
-
 for each epoch:
     Sample a batch of attacks (e.g. 8): PGD x 2, FSGM x 4, SIM x 2
     Initialize theta = []
