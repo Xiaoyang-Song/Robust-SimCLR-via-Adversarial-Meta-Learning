@@ -10,7 +10,7 @@ from utils import *
 from attack.attack import PGDAttack, FGSMAttack
 
 
-def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, criterion,
+def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, criterion, writer,
                      logger: Logger, train_batch_size, test_batch_size, max_epoch=10, n_steps_show=64, n_epoch_checkpoint=1,
                      device=DEVICE):
 
@@ -41,6 +41,7 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
 
     # Basic stats
     current_epoch = 0
+    tri_iter_count, val_iter_count = 0
     for epoch in range(max_epoch):
         print(f"Epoch [{epoch}/{max_epoch}]\t")
         stime = time.time()
@@ -52,6 +53,7 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
 
         rand_idx = np.random.randint(5)
         logger.log_attack_epoch(rand_idx)
+
         print("rand_idx is", rand_idx)
         attacker_train = attack_sample_list_train[rand_idx]
         attacker_test = attack_sample_list_test[rand_idx]
@@ -80,6 +82,8 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
             # Logging & Append training loss
             tr_loss_epoch.append(loss.item())
             logger.log_train_step(loss.item())
+            writer.add_scalar("Loss/Train", loss.item(), tri_iter_count)
+            tri_iter_count += 1
 
             # Show stats every n_steps_show updates
             if (step+1) % n_steps_show == 0:
@@ -89,6 +93,7 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
         # Log learning rate
         lr = optimizer.param_groups[0]["lr"]
         logger.log_lr_epoch(lr)
+        writer.add_scalar("LR", lr, epoch)
 
         # SCHEDULER Update
         if epoch < 10:
@@ -120,6 +125,8 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
 
                 # Logging & show validation statistics
                 val_loss_epoch.append(loss.item())
+                writer.add_scalar("Loss/Eval", loss.item(), val_iter_count)
+                val_iter_count += 1
 
         # Checkpointing
         if (epoch+1) % n_epoch_checkpoint == 0:
@@ -129,6 +136,10 @@ def RBSimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, crit
         # Logging & Show epoch-level statistics
         logger.log_train_epoch(np.mean(tr_loss_epoch))
         logger.log_eval_epoch(np.mean(val_loss_epoch))
+        writer.add_scalars("Loss (Epoch)", {
+            'Train': np.mean(tr_loss_epoch),
+            'Eval': np.mean(val_loss_epoch)
+        }, epoch)
         print(
             f"Epoch [{epoch+1}/{max_epoch}]\t Training Loss: {np.mean(tr_loss_epoch)}\t lr: {round(lr, 5)}")
         print(
