@@ -7,6 +7,7 @@ from data.dataset import *
 from loss import PairwiseSimilarity, RBSimCLRLoss
 import time
 from utils import *
+from torch.utils.tensorboard import SummaryWriter
 from attack.attack import PGDAttack, FGSMAttack
 
 
@@ -160,17 +161,20 @@ if __name__ == '__main__':
     train_dataset = dataset.get_dataset('cifar10_tri', num_views)
     val_dataset = dataset.get_dataset('cifar10_val', num_views)
     # Batch size config
-    bsz_tri, bsz_val = 128, 64
+    bsz_tri, bsz_val = 128, 128
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=bsz_tri, shuffle=True,
         num_workers=2, pin_memory=True, drop_last=True)
     val_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=bsz_val, shuffle=True,
         num_workers=2, pin_memory=True, drop_last=True)
+
     # Model and training config
-    model = RBSimCLR(128).to(DEVICE)
+    model = RBSimCLR(256).to(DEVICE)
     optimizer = torch.optim.Adam(
         model.parameters(), lr=1e-3, betas=(0.5, 0.999))
+
+    # Warmup scheduler
     warmupscheduler = torch.optim.lr_scheduler.LambdaLR(
         optimizer, lambda epoch: (epoch+1)/10.0, verbose=True)
     # SCHEDULER FOR COSINE DECAY
@@ -180,6 +184,7 @@ if __name__ == '__main__':
         'warmupscheduler': warmupscheduler,
         'mainscheduler': mainscheduler
     }
+
     # LOSS FUNCTION
     tri_criterion = RBSimCLRLoss(batch_size=bsz_tri, temperature=0.5)
     val_criterion = RBSimCLRLoss(batch_size=bsz_val, temperature=0.5)
@@ -187,7 +192,11 @@ if __name__ == '__main__':
         'tri_criterion': tri_criterion,
         'val_criterion': val_criterion
     }
-    # Logger
+
+    # Logger & Writer
     logger = Logger()
+    writer = SummaryWriter("RBSimCLR")
+
+    # Train
     RBSimCLR_trainer(model, train_loader, val_loader,
-                     optimizer, scheduler, criterion, logger, bsz_tri, bsz_val)
+                     optimizer, scheduler, criterion, writer, logger, bsz_tri, bsz_val)
