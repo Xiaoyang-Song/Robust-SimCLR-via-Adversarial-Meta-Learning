@@ -24,18 +24,18 @@ def checkpoint(model, bsz, optimizer, scheduler, current_epoch, logger, filename
 
 
 def sample_batch(dset, bsz):
-    num_pts = len(dset)
-    assert num_pts >= bsz
-    random_idx = np.random.choice(num_pts, bsz, replace=False)
-    ic("Starting sample")
+    # num_pts = len(dset)
+    # assert num_pts >= bsz
+    # random_idx = np.random.choice(num_pts, bsz, replace=False)
+    # ic("Starting sample")
 
     # Slow
-    # loader = torch.utils.data.DataLoader(
-    #     dset, batch_size=bsz, shuffle=True,
-    #     num_workers=2, pin_memory=True, drop_last=True)
+    loader = torch.utils.data.DataLoader(
+        dset, batch_size=bsz, shuffle=True,
+        num_workers=2, pin_memory=True, drop_last=True)
     # ic(iter(loader)[0])
     # ic(len(iter(loader)))
-    # return next(iter(loader))[0]
+    return next(iter(loader))[0]
 
 
 class Logger():

@@ -10,8 +10,10 @@ import time
 from utils import *
 from attack.attack import PGDAttack, FGSMAttack
 
+
 class MetaRBSimCLR(nn.Module):
     def __init__(self, model_config, meta_config, tri_args, device=DEVICE):
+        super().__init__()
         self.device = device
         self.sample_bsz = tri_args['sample_bsz']
 
@@ -21,24 +23,26 @@ class MetaRBSimCLR(nn.Module):
         self.encoder_type = model_config['encoder']
         self.n_features = model_config['n_features']
         # Declare local & meta model
-        self.local_model = RBSimCLR(self.projection_dim, self.rbsimclr_isadv,
-                                    self.encoder_type, self.n_features)
-        self.meta_model = RBSimCLR(self.projection_dim, self.rbsimclr_isadv,
-                                   self.encoder_type, self.n_features)
+        # self.local_model = RBSimCLR(self.projection_dim, self.rbsimclr_isadv,
+        #                             self.encoder_type, self.n_features)
+        # self.meta_model = RBSimCLR(self.projection_dim, self.rbsimclr_isadv,
+        #                            self.encoder_type, self.n_features)
+        self.local_model = RBSimCLR(self.projection_dim)
+        self.meta_model = RBSimCLR(self.projection_dim)
         # Training params
         self.alpha = meta_config['alpha']
         self.beta = meta_config['beta']
         self.num_local_updates = meta_config['num_local_updates']
         self.max_epoch = meta_config['max_epoch']
         self.n_epoch_checkpoint = meta_config['n_epoch_checkpoint']
-        self.attack_sample_list= [FGSMAttack(),
-                                PGDAttack(batch_size=self.sample_bsz,
-                                          loss_type="mse"),
-                                PGDAttack(batch_size=self.sample_bsz,
-                                          loss_type="sim"),
-                                PGDAttack(batch_size=self.sample_bsz,
-                                          loss_type="l1"),
-                                PGDAttack(batch_size=self.sample_bsz, loss_type="cos")]
+        self.attack_sample_list = [FGSMAttack(),
+                                   PGDAttack(batch_size=self.sample_bsz,
+                                             loss_type="mse"),
+                                   PGDAttack(batch_size=self.sample_bsz,
+                                             loss_type="sim"),
+                                   PGDAttack(batch_size=self.sample_bsz,
+                                             loss_type="l1"),
+                                   PGDAttack(batch_size=self.sample_bsz, loss_type="cos")]
 
         # Loss & Optimizer
         self.criterion = RBSimCLRLoss(
@@ -50,7 +54,6 @@ class MetaRBSimCLR(nn.Module):
 
         # Buffer
         self.local_model_params = []
-
 
     def train(self, dset):
         for epoch in range(self.max_epoch):
@@ -77,9 +80,9 @@ class MetaRBSimCLR(nn.Module):
                     x_j = x_j.squeeze().to(self.device).float()
                     # TODO:(Irma) replace with attacked images
                     x_adv = atk.perturb(input_model=self.local_model,
-                                           original_images=x,
-                                           target=x,
-                                           ).to(self.device)
+                                        original_images=x,
+                                        target=x,
+                                        ).to(self.device)
                     # Local forward pass
                     _, _, _, z_i, z_j, z_adv = self.local_model(
                         x_i, x_j, x_adv)
@@ -103,9 +106,9 @@ class MetaRBSimCLR(nn.Module):
                 x_j = x_j.squeeze().to(self.device).float()
                 # TODO:(irma) replace with attacked images
                 x_adv = atk.perturb(input_model=self.local_model,
-                                           original_images=x,
-                                           target=x,
-                                           ).to(self.device)
+                                    original_images=x,
+                                    target=x,
+                                    ).to(self.device)
                 # Forward pass
                 _, _, _, z_i, z_j, z_adv = self.local_model(
                     x_i, x_j, x_adv)
@@ -168,4 +171,23 @@ if __name__ == '__main__':
     # print(list(model.parameters())[-1])
     # for param in model.parameters():
     #     param.data = torch.zeros(param.data.shape)
-    # print(list(model.parameters())[-1])
+    # print(list(model.parameters())[-1]
+    model_config = dict(
+        projection_dim=256,
+        adversarial=None,
+        n_features=None,
+        encoder=None
+    )
+
+    meta_config = dict(
+        alpha=1e-3,
+        beta=1e-3,
+        num_local_updates=1,
+        max_epoch=50,
+        n_epoch_checkpoint=1,
+    )
+
+    tri_args = dict(
+        num_atks_per_ep=10,
+        sample_bsz=128
+    )
