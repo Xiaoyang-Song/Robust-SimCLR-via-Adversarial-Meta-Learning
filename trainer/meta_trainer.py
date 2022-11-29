@@ -27,8 +27,8 @@ class MetaRBSimCLR(nn.Module):
         #                             self.encoder_type, self.n_features)
         # self.meta_model = RBSimCLR(self.projection_dim, self.rbsimclr_isadv,
         #                            self.encoder_type, self.n_features)
-        self.local_model = RBSimCLR(self.projection_dim)
-        self.meta_model = RBSimCLR(self.projection_dim)
+        self.local_model = RBSimCLR(self.projection_dim).to(self.device)
+        self.meta_model = RBSimCLR(self.projection_dim).to(self.device)
         # Training params
         self.alpha = meta_config['alpha']
         self.beta = meta_config['beta']
@@ -71,6 +71,7 @@ class MetaRBSimCLR(nn.Module):
                 # Load global model states
                 ic(f"epoch {epoch} local step {idx}")
                 self.local_model.load_state_dict(meta_model_state)
+                self.local_model.to(self.device)
                 self.local_optimzier = torch.optim.SGD(
                     self.local_model.parameters(), self.alpha, momentum=0.9)
                 # Local updates
@@ -103,6 +104,7 @@ class MetaRBSimCLR(nn.Module):
                 ic(f"epoch {epoch} global update {idx}")
                 # Load global model states & Initialize model
                 self.local_model.load_state_dict(self.local_model_params[idx])
+                self.local_model.to(self.device)
                 # Sample batch of images
                 batch = sample_batch(dset, self.sample_bsz)
                 x_i, x_j, x = batch
