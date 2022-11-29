@@ -78,6 +78,7 @@ class MetaRBSimCLR(nn.Module):
                     self.local_optimizer.zero_grad()
                     batch = sample_batch(dset, self.sample_bsz)
                     x_i, x_j, x = batch
+                    x = x.squeeze().to(self.device).float()
                     x_i = x_i.squeeze().to(self.device).float()
                     x_j = x_j.squeeze().to(self.device).float()
                     # TODO:(Irma) replace with attacked images
@@ -105,6 +106,7 @@ class MetaRBSimCLR(nn.Module):
                 # Sample batch of images
                 batch = sample_batch(dset, self.sample_bsz)
                 x_i, x_j, x = batch
+                x = x.squeeze().to(self.device).float()
                 x_i = x_i.squeeze().to(self.device).float()
                 x_j = x_j.squeeze().to(self.device).float()
                 # TODO:(irma) replace with attacked images
