@@ -66,8 +66,9 @@ class MetaRBSimCLR(nn.Module):
             self.local_model_params = []
             # Do local updates for each attacks
             meta_model_state = self.meta_model.state_dict()
-            for atk in attacks:
+            for idx, atk in enumerate(attacks):
                 # Load global model states
+                ic(f"epoch {epoch} local step {idx}")
                 self.local_model.load_state_dict(meta_model_state)
                 self.local_optimzier = torch.nn.optim.SGD(
                     self.local_model.parameters(), self.alpha, momentum=0.9)
@@ -97,6 +98,7 @@ class MetaRBSimCLR(nn.Module):
             tr_loss_epoch = []
             # Starting global updates
             for idx, atk in enumerate(attacks):
+                ic(f"epoch {epoch} global update {idx}")
                 # Load global model states & Initialize model
                 self.local_model.load_state_dict(self.local_model_params[idx])
                 # Sample batch of images
