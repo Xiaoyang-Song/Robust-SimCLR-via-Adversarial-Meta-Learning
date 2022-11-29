@@ -8,11 +8,13 @@ from data.dataset import *
 from loss import PairwiseSimilarity, RBSimCLRLoss
 import time
 from utils import *
-
+from attack.attack import PGDAttack, FGSMAttack
 
 class MetaRBSimCLR(nn.Module):
     def __init__(self, model_config, meta_config, tri_args, device=DEVICE):
         self.device = device
+        self.sample_bsz = tri_args['sample_bsz']
+
         # Extract model configuration
         self.projection_dim = model_config['projection_dim']
         self.rbsimclr_isadv = model_config['adversarial']
@@ -29,6 +31,15 @@ class MetaRBSimCLR(nn.Module):
         self.num_local_updates = meta_config['num_local_updates']
         self.max_epoch = meta_config['max_epoch']
         self.n_epoch_checkpoint = meta_config['n_epoch_checkpoint']
+        self.attack_sample_list= [FGSMAttack(),
+                                PGDAttack(batch_size=self.sample_bsz,
+                                          loss_type="mse"),
+                                PGDAttack(batch_size=self.sample_bsz,
+                                          loss_type="sim"),
+                                PGDAttack(batch_size=self.sample_bsz,
+                                          loss_type="l1"),
+                                PGDAttack(batch_size=self.sample_bsz, loss_type="cos")]
+
         # Loss & Optimizer
         self.criterion = RBSimCLRLoss(
             batch_size=self.sample_bsz, temperature=0.5)
@@ -36,15 +47,19 @@ class MetaRBSimCLR(nn.Module):
 
         # Hyperparams
         self.num_atks_per_ep = tri_args['num_atks_per_ep']
-        self.sample_bsz = tri_args['sample_bsz']
 
         # Buffer
         self.local_model_params = []
 
+
     def train(self, dset):
         for epoch in range(self.max_epoch):
-            # atks = sample_attacks() TODO: (Xiaoyang) sample attacks
-            attacks = None
+            # atks = sample_attacks() TODO: (Irma) sample attacks
+            attacks = []
+
+            for i in range(self.num_atks_per_ep):
+                rand_idx = np.random.randint(5)
+                attacks.append(self.attack_sample_list[rand_idx])
             self.local_model_params = []
             # Do local updates for each attacks
             meta_model_state = self.meta_model.state_dict()
@@ -57,11 +72,14 @@ class MetaRBSimCLR(nn.Module):
                 for local_steps in range(self.num_local_updates):
                     self.local_optimizer.zero_grad()
                     batch = sample_batch(dset, self.sample_bsz)
-                    xi, xj, x = batch
+                    x_i, x_j, x = batch
                     x_i = x_i.squeeze().to(self.device).float()
                     x_j = x_j.squeeze().to(self.device).float()
-                    # TODO:(Xiaoyang) replace with attacked images
-                    x_adv = None
+                    # TODO:(Irma) replace with attacked images
+                    x_adv = atk.perturb(input_model=self.local_model,
+                                           original_images=x,
+                                           target=x,
+                                           ).to(self.device)
                     # Local forward pass
                     _, _, _, z_i, z_j, z_adv = self.local_model(
                         x_i, x_j, x_adv)
@@ -80,11 +98,14 @@ class MetaRBSimCLR(nn.Module):
                 self.local_model.load_state_dict(self.local_model_params[idx])
                 # Sample batch of images
                 batch = sample_batch(dset, self.sample_bsz)
-                xi, xj, x = batch
+                x_i, x_j, x = batch
                 x_i = x_i.squeeze().to(self.device).float()
                 x_j = x_j.squeeze().to(self.device).float()
-                # TODO:(Xiaoyang) replace with attacked images
-                x_adv = None
+                # TODO:(irma) replace with attacked images
+                x_adv = atk.perturb(input_model=self.local_model,
+                                           original_images=x,
+                                           target=x,
+                                           ).to(self.device)
                 # Forward pass
                 _, _, _, z_i, z_j, z_adv = self.local_model(
                     x_i, x_j, x_adv)
