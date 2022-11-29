@@ -70,7 +70,7 @@ class MetaRBSimCLR(nn.Module):
                 # Load global model states
                 ic(f"epoch {epoch} local step {idx}")
                 self.local_model.load_state_dict(meta_model_state)
-                self.local_optimzier = torch.nn.optim.SGD(
+                self.local_optimzier = torch.optim.SGD(
                     self.local_model.parameters(), self.alpha, momentum=0.9)
                 # Local updates
                 for local_steps in range(self.num_local_updates):
