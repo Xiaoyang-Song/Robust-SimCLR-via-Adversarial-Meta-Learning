@@ -124,7 +124,7 @@ class MetaRBSimCLR(nn.Module):
                 grad = torch.autograd.grad(loss, self.local_model.parameters())
 
                 # Log useful stats
-                tr_loss_epoch.append(loss)
+                tr_loss_epoch.append(loss.item().cpu())
 
                 # Global update step for meta model:
                 for layer_grad, param in zip(grad, self.meta_model.parameters()):
