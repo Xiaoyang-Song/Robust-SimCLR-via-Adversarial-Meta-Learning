@@ -134,7 +134,7 @@ class MetaRBSimCLR(nn.Module):
                 f"Epoch [{epoch+1}/{self.max_epoch}]\t Training Loss: {np.mean(tr_loss_epoch)}")
             # Checkpointing
             if (epoch+1) % self.n_epoch_checkpoint == 0:
-                checkpoint(self.meta_model, None, None, epoch,
+                checkpoint(self.meta_model, None, None, None, epoch,
                            None, "MetaRBSimCLR_epoch_{}_checkpoint.pt")
 
 
