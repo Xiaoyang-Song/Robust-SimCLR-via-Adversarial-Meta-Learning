@@ -47,7 +47,8 @@ class MetaRBSimCLR(nn.Module):
         # Loss & Optimizer
         self.criterion = RBSimCLRLoss(
             batch_size=self.sample_bsz, temperature=0.5)
-        self.local_optimizer = None
+        self.local_optimizer = torch.optim.SGD(
+            self.local_model.parameters(), self.alpha, momentum=0.9)
 
         # Hyperparams
         self.num_atks_per_ep = tri_args['num_atks_per_ep']
