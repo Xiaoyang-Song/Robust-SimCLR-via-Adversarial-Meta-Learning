@@ -28,8 +28,7 @@ def meta_checkpoint(model, bsz, current_epoch, writer, filename):
     ic(f"Checkpoint {current_epoch} saved!")
     torch.save({
         'bsz': bsz,
-        'model_state_dict': model.state_dict(),
-        'writer': writer
+        'model_state_dict': model.state_dict()
     }, out)
 
 
