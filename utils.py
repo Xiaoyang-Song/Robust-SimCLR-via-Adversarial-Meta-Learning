@@ -23,6 +23,16 @@ def checkpoint(model, bsz, optimizer, scheduler, current_epoch, logger, filename
                 }, out)
 
 
+def meta_checkpoint(model, bsz, current_epoch, writer, filename):
+    out = os.path.join('./checkpoint/', filename.format(current_epoch))
+    ic(f"Checkpoint {current_epoch} saved!")
+    torch.save({
+        'bsz': bsz,
+        'model_state_dict': model.state_dict(),
+        'writer': writer
+    }, out)
+
+
 def sample_batch(dset, bsz):
     # num_pts = len(dset)
     # assert num_pts >= bsz

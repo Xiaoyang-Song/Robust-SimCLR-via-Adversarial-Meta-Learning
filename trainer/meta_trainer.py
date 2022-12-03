@@ -8,6 +8,7 @@ from data.dataset import *
 from loss import PairwiseSimilarity, RBSimCLRLoss
 import time
 from utils import *
+from torch.utils.tensorboard import SummaryWriter
 from attack.attack import PGDAttack, FGSMAttack
 
 
@@ -16,7 +17,7 @@ class MetaRBSimCLR(nn.Module):
         super().__init__()
         self.device = device
         self.sample_bsz = tri_args['sample_bsz']
-
+        self.writer = SummaryWriter('MetaSimCLR')
         # Extract model configuration
         self.projection_dim = model_config['projection_dim']
         self.rbsimclr_isadv = model_config['adversarial']
@@ -57,6 +58,7 @@ class MetaRBSimCLR(nn.Module):
         self.local_model_params = []
 
     def train(self, dset):
+        local_iter_count = 0
         for epoch in range(self.max_epoch):
             # atks = sample_attacks() TODO: (Irma) sample attacks
             attacks = []
@@ -93,6 +95,11 @@ class MetaRBSimCLR(nn.Module):
                     # Local loss
                     loss = self.criterion(z_i, z_j, z_adv)
                     loss.backward()
+
+                    # Local statistics
+                    self.writer.add_scalar(
+                        "Loss/Local", loss.item(), local_iter_count)
+                    local_iter_count += 1
                     self.local_optimizer.step()
 
                 # Save local model params
@@ -128,14 +135,15 @@ class MetaRBSimCLR(nn.Module):
 
                 # Global update step for meta model:
                 for layer_grad, param in zip(grad, self.meta_model.parameters()):
-                    param.data -= self.beta * layer_grad
+                    param.data -= self.beta * layer_grad / self.num_atks_per_ep
 
             print(
                 f"Epoch [{epoch+1}/{self.max_epoch}]\t Training Loss: {np.mean(tr_loss_epoch)}")
+            self.writer.add_scalar("Loss/Epoch", np.mean(tr_loss_epoch), epoch)
             # Checkpointing
             if (epoch+1) % self.n_epoch_checkpoint == 0:
-                checkpoint(self.meta_model, None, None, None, epoch,
-                           None, "MetaRBSimCLR_epoch_{}_checkpoint.pt")
+                meta_checkpoint(self.meta_model, self.sample_bsz, epoch,
+                                self.writer, "MetaSimCLR_epoch_{}_checkpoint.pt")
 
 
 if __name__ == '__main__':
