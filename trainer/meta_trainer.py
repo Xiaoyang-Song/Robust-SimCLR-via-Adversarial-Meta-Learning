@@ -94,6 +94,7 @@ class MetaRBSimCLR(nn.Module):
                         x_i, x_j, x_adv)
                     # Local loss
                     loss = self.criterion(z_i, z_j, z_adv)
+                    print(f"local_loss: {loss.item()}")
                     loss.backward()
 
                     # Local statistics
