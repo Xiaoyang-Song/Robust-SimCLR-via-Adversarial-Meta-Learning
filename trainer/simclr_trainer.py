@@ -1,0 +1,177 @@
+import torch
+import torchvision
+# Customized import
+from models.identity import *
+from models.RBSimCLR import *
+from data.dataset import *
+from loss import PairwiseSimilarity, RBSimCLRLoss
+import time
+from utils import *
+from torch.utils.tensorboard import SummaryWriter
+from attack.attack import PGDAttack, FGSMAttack
+
+
+def SimCLR_trainer(model, train_loader, val_loader, optimizer, scheduler, criterion, writer: SummaryWriter,
+                     logger: Logger, train_batch_size, test_batch_size, max_epoch=10, n_steps_show=64, n_epoch_checkpoint=1,
+                     device=DEVICE):
+
+
+    print(f"Device: {device}")
+    # TODO: (Xiaoyang) Enable checkpoint loading if necessary
+    warmupscheduler = scheduler['warmupscheduler']
+    mainscheduler = scheduler['mainscheduler']
+    tri_criterion = criterion['tri_criterion']
+    val_criterion = criterion['val_criterion']
+    checkpoint(model, [train_batch_size, test_batch_size], optimizer, mainscheduler, 0,
+               logger, "SimCLR_epoch_{}_checkpoint.pt")
+
+    # Basic stats
+    current_epoch = 0
+    tri_iter_count, val_iter_count = 0
+    for epoch in range(max_epoch):
+        print(f"Epoch [{epoch}/{max_epoch}]\t")
+        stime = time.time()
+
+        # TRAINING phase
+        model.train()
+        tr_loss_epoch = []
+        # TODO: Sample attack (for train & test) sample with dict
+
+        rand_idx = np.random.randint(5)
+        logger.log_attack_epoch(rand_idx)
+
+        print("rand_idx is", rand_idx)
+
+        # e.g. Attacker = Attack(type, metadata)
+        for step, ((x_i, x_j, x), y) in enumerate(train_loader):
+            optimizer.zero_grad()
+            # Get augmented and attacked images
+            x_i = x_i.squeeze().to(device).float()
+            x_j = x_j.squeeze().to(device).float()
+            x = x.squeeze().to(device).float()
+
+
+            # Get latent representation
+            h_i, h_j, z_i, z_j = model(x_i, x_j)
+
+            loss = tri_criterion(z_i, z_j)
+            loss.backward()
+            optimizer.step()
+
+            # Logging & Append training loss
+            tr_loss_epoch.append(loss.item())
+            logger.log_train_step(loss.item())
+            writer.add_scalar("Loss/Train", loss.item(), tri_iter_count)
+            tri_iter_count += 1
+
+            # Show stats every n_steps_show updates
+            if (step+1) % n_steps_show == 0:
+                print(
+                    f"Step [{step+1}/{len(train_loader)}]\t Loss: {round(loss.item(), 5)}")
+
+        # Log learning rate
+        lr = optimizer.param_groups[0]["lr"]
+        logger.log_lr_epoch(lr)
+        writer.add_scalar("LR", lr, epoch)
+
+        # SCHEDULER Update
+        if epoch < 10:
+            warmupscheduler.step()
+        if epoch >= 10:
+            mainscheduler.step()
+
+        # EVALUATION Phase
+        model.eval()
+        with torch.no_grad():
+            val_loss_epoch = []
+            for step, ((x_i, x_j, x), y) in enumerate(val_loader):
+
+                x_i = x_i.squeeze().to(device).float()
+                x_j = x_j.squeeze().to(device).float()
+                x = x.squeeze().to(device).float()
+                # x_adv = Attacker(x)
+                # x_adv = x_j.squeeze().to(device).float() # Test
+                # TODO: Evaluation -->
+
+
+                # Get latent representation
+                h_i, h_j, z_i, z_j = model(x_i, x_j)
+
+                loss = val_criterion(z_i, z_j)
+
+                # Logging & show validation statistics
+                val_loss_epoch.append(loss.item())
+                writer.add_scalar("Loss/Eval", loss.item(), val_iter_count)
+                val_iter_count += 1
+
+        # Checkpointing
+        if (epoch+1) % n_epoch_checkpoint == 0:
+            checkpoint(model, [train_batch_size, test_batch_size], optimizer, mainscheduler, current_epoch,
+                       logger, "SimCLR_epoch_{}_checkpoint.pt")
+
+        # Logging & Show epoch-level statistics
+        logger.log_train_epoch(np.mean(tr_loss_epoch))
+        logger.log_eval_epoch(np.mean(val_loss_epoch))
+        writer.add_scalars("Loss (Epoch)", {
+            'Train': np.mean(tr_loss_epoch),
+            'Eval': np.mean(val_loss_epoch)
+        }, epoch)
+        print(
+            f"Epoch [{epoch+1}/{max_epoch}]\t Training Loss: {np.mean(tr_loss_epoch)}\t lr: {round(lr, 5)}")
+        print(
+            f"Epoch [{epoch+1}/{max_epoch}]\t Validation Loss: {np.mean(val_loss_epoch)}\t lr: {round(lr, 5)}")
+        current_epoch += 1
+
+    # Running time statistics
+    time_taken = (time.time()-stime)/60
+    print(f"Epoch [{epoch}/{max_epoch}]\t Time Taken: {time_taken} minutes")
+
+
+if __name__ == '__main__':
+    ic("RBSimCLR trainer")
+    # Get dataset
+    dataset = ContrastiveLearningDataset("./datasets")
+    num_views = 2
+    print(DEVICE)
+    train_dataset = dataset.get_dataset('cifar10_tri', num_views)
+    val_dataset = dataset.get_dataset('cifar10_val', num_views)
+    # Batch size config
+    bsz_tri, bsz_val = 128, 128
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset, batch_size=bsz_tri, shuffle=True,
+        num_workers=2, pin_memory=True, drop_last=True)
+    val_loader = torch.utils.data.DataLoader(
+        train_dataset, batch_size=bsz_val, shuffle=True,
+        num_workers=2, pin_memory=True, drop_last=True)
+
+    # Model and training config
+    model = RBSimCLR(256).to(DEVICE)
+    optimizer = torch.optim.Adam(
+        model.parameters(), lr=1e-3, betas=(0.5, 0.999))
+
+    # Warmup scheduler
+    warmupscheduler = torch.optim.lr_scheduler.LambdaLR(
+        optimizer, lambda epoch: (epoch+1)/10.0, verbose=True)
+    # SCHEDULER FOR COSINE DECAY
+    mainscheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
+        optimizer, 500, eta_min=0.05, last_epoch=-1, verbose=True)
+    scheduler = {
+        'warmupscheduler': warmupscheduler,
+        'mainscheduler': mainscheduler
+    }
+
+    # LOSS FUNCTION
+    tri_criterion = PairwiseSimilarity(batch_size=bsz_tri, temperature=0.5)
+    val_criterion = PairwiseSimilarity(batch_size=bsz_val, temperature=0.5)
+    criterion = {
+        'tri_criterion': tri_criterion,
+        'val_criterion': val_criterion
+    }
+
+    # Logger & Writer
+    logger = Logger()
+    writer = SummaryWriter("RBSimCLR")
+
+    # Train
+    SimCLR_trainer(model, train_loader, val_loader,
+                     optimizer, scheduler, criterion, writer, logger, bsz_tri, bsz_val)
