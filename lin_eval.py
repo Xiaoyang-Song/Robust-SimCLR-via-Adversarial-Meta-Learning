@@ -4,15 +4,16 @@ from tqdm import tqdm
 
 class LEVAL(nn.Module):
     def __init__(self):
-        self.fc = nn.Linear(256, 256)
+        self.fc = nn.Linear(512, 1024)
+        # self.fc = nn.Linear(1024, 1024)
         self.relu = nn.ReLU()
-        self.out = nn.Linear(256, 10)
+        self.out = nn.Linear(1024, 10)
 
     def forward(self, x):
         return self.out(self.relu(self.fc(x)))
 
 
-def clf_trainer(model, cifar_tri_loader, cifar_val_loader, le_writer):
+def clf_trainer(model, base_model, cifar_tri_loader, cifar_val_loader, le_writer):
     num_epoch = 10
     iter_count_train = 0
     iter_count_val = 0
@@ -29,7 +30,7 @@ def clf_trainer(model, cifar_tri_loader, cifar_val_loader, le_writer):
             img = img.to(DEVICE)
             label = label.to(DEVICE)
             optimizer.zero_grad()
-            logits = model(img)
+            logits = model(base_model(img))
             loss = criterion(logits, label)
             loss.backward()
             optimizer.step()
@@ -55,7 +56,7 @@ def clf_trainer(model, cifar_tri_loader, cifar_val_loader, le_writer):
             val_loss, val_acc = [], []
             for idx, (img, label) in enumerate(cifar_val_loader):
                 img, label = img.to(DEVICE), label.to(DEVICE)
-                logits = model(img)
+                logits = model(base_model(img))
                 loss = criterion(logits, label)
                 acc = (torch.argmax(logits, dim=1) ==
                        label).sum().item() / label.shape[0]
