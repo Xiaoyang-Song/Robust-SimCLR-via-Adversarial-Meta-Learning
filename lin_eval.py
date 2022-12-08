@@ -14,9 +14,13 @@ class LEVAL(nn.Module):
 
 
 def clf_trainer(model, base_model, cifar_tri_loader, cifar_val_loader, le_writer):
+    # base_model: self.encoder from pretrained rbsimclr
+    # model: linear evaluation block
     num_epoch = 10
     iter_count_train = 0
     iter_count_val = 0
+
+    base_model.eval()
 
     optimizer = torch.optim.Adam(
         model.parameters(), lr=1e-3, betas=(0.5, 0.999))
