@@ -18,6 +18,7 @@ class RBSimCLR(nn.Module):
         # Handle default backbone
         if encoder is None:
             self.encoder = get_resnet('resnet18')
+            # self.encoder = get_resnet('resnet50')
         else:
             self.encoder = encoder
         # Handle default n_features
@@ -50,3 +51,8 @@ class RBSimCLR(nn.Module):
             z_adv = self.projector(h_adv)
             return h_i, h_j, h_adv, z_i, z_j, z_adv
         return h_i, h_j, z_i, z_j
+
+
+if __name__ == '__main__':
+    model = RBSimCLR(256)
+    ic(model.encoder)
