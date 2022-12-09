@@ -4,6 +4,7 @@ from tqdm import tqdm
 
 class LEVAL(nn.Module):
     def __init__(self):
+        super().__init__()
         self.fc = nn.Linear(512, 1024)
         # self.fc = nn.Linear(1024, 1024)
         self.relu = nn.ReLU()
