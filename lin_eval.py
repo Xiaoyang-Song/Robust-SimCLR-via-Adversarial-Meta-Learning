@@ -35,7 +35,8 @@ def clf_trainer(model, base_model, cifar_tri_loader, cifar_val_loader, le_writer
             img = img.to(DEVICE)
             label = label.to(DEVICE)
             optimizer.zero_grad()
-            logits = model(base_model(img))
+            feat = base_model(img)
+            logits = model(feat)
             loss = criterion(logits, label)
             loss.backward()
             optimizer.step()
@@ -61,7 +62,8 @@ def clf_trainer(model, base_model, cifar_tri_loader, cifar_val_loader, le_writer
             val_loss, val_acc = [], []
             for idx, (img, label) in enumerate(cifar_val_loader):
                 img, label = img.to(DEVICE), label.to(DEVICE)
-                logits = model(base_model(img))
+                feat = base_model(img)
+                logits = model(feat)
                 loss = criterion(logits, label)
                 acc = (torch.argmax(logits, dim=1) ==
                        label).sum().item() / label.shape[0]
